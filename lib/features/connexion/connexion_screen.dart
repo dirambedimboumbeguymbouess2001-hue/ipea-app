@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/auth/auth_state.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 
@@ -26,9 +28,7 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
     super.dispose();
   }
 
-  void _seConnecter() {
-    // Validation minimale pour l'instant — sera remplacée par le véritable
-    // appel à l'API de connexion dès que la documentation sera disponible.
+  Future<void> _seConnecter() async {
     setState(() {
       _erreurIdentifiant =
           _identifiantController.text.isEmpty ? 'Identifiant requis' : null;
@@ -38,10 +38,19 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
 
     setState(() => _chargement = true);
 
-    // Simulation temporaire d'un appel réseau
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) setState(() => _chargement = false);
-    });
+    // --- SIMULATION TEMPORAIRE, en attendant la documentation API ---
+    // Sera remplacé par un vrai appel POST /login, avec vérification
+    // du mot de passe côté serveur avant d'appeler connecter().
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+    setState(() => _chargement = false);
+
+    await AuthState.instance.connecter();
+
+    // La garde de route redirige normalement automatiquement, mais on
+    // force la navigation explicitement pour plus de fiabilité.
+    if (mounted) context.go('/tableau-de-bord');
   }
 
   @override
@@ -55,8 +64,6 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.xxl),
-
-              // En-tête
               Center(
                 child: Container(
                   width: 64,
@@ -82,7 +89,6 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
               ),
               const SizedBox(height: AppSpacing.xxl),
 
-              // Formulaire
               AppTextField(
                 label: 'Identifiant',
                 controller: _identifiantController,
@@ -126,7 +132,7 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
 
               Center(
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () => context.go('/activation'),
                   child: Text(
                     'Activer mon compte',
                     style: AppTypography.bodyMedium.copyWith(

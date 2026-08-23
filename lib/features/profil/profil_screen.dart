@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/auth/auth_state.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
@@ -90,6 +92,43 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
   }
 
+  Future<void> _seDeconnecter() async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Déconnexion'),
+        content: const Text('Voulez-vous vraiment vous déconnecter ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Déconnexion', style: TextStyle(color: AppColors.erreur)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirme == true) {
+      await AuthState.instance.deconnecter();
+      if (mounted) context.go('/connexion');
+    }
+  }
+
+  void _ouvrirChangementMotDePasse() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.blanc,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLarge)),
+      ),
+      builder: (context) => const _FormulaireChangementMotDePasse(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,71 +161,89 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
     final profil = _profil!;
 
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Avatar + nom, jamais modifiables directement ici
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: AppColors.marine,
-                  child: Text(
-                    profil.nomComplet.split(' ').map((m) => m[0]).take(2).join(),
-                    style: AppTypography.h1.copyWith(color: AppColors.blanc),
-                  ),
+      children: [
+        Center(
+          child: Column(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: AppColors.marine,
+                child: Text(
+                  profil.nomComplet.split(' ').map((m) => m[0]).take(2).join(),
+                  style: AppTypography.h1.copyWith(color: AppColors.blanc),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(profil.nomComplet, style: AppTypography.h2, textAlign: TextAlign.center),
-                Text(profil.matricule, style: AppTypography.bodySmall),
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(profil.nomComplet, style: AppTypography.h2, textAlign: TextAlign.center),
+              Text(profil.matricule, style: AppTypography.bodySmall),
+            ],
           ),
-          const SizedBox(height: AppSpacing.lg),
+        ),
+        const SizedBox(height: AppSpacing.lg),
 
-          AppCard(
-            child: _modeEdition
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AppTextField(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
-                      const SizedBox(height: AppSpacing.md),
-                      AppTextField(label: 'Téléphone', controller: _telephoneController, keyboardType: TextInputType.phone),
-                      const SizedBox(height: AppSpacing.lg),
-                      AppButton(
-                        label: 'Enregistrer',
-                        onPressed: _enregistrer,
-                        isLoading: _enregistrementEnCours,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      AppButton(
-                        label: 'Annuler',
-                        variant: AppButtonVariant.secondaire,
-                        onPressed: _enregistrementEnCours
-                            ? null
-                            : () {
-                                setState(() {
-                                  _modeEdition = false;
-                                  _emailController.text = profil.email;
-                                  _telephoneController.text = profil.telephone;
-                                });
-                              },
-                      ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      _ligneInfo(Icons.email_outlined, 'Email', profil.email),
-                      const Divider(height: AppSpacing.lg),
-                      _ligneInfo(Icons.phone_outlined, 'Téléphone', profil.telephone),
-                    ],
-                  ),
+        AppCard(
+          child: _modeEdition
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppTextField(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(label: 'Téléphone', controller: _telephoneController, keyboardType: TextInputType.phone),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(
+                      label: 'Enregistrer',
+                      onPressed: _enregistrer,
+                      isLoading: _enregistrementEnCours,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(
+                      label: 'Annuler',
+                      variant: AppButtonVariant.secondaire,
+                      onPressed: _enregistrementEnCours
+                          ? null
+                          : () {
+                              setState(() {
+                                _modeEdition = false;
+                                _emailController.text = profil.email;
+                                _telephoneController.text = profil.telephone;
+                              });
+                            },
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    _ligneInfo(Icons.email_outlined, 'Email', profil.email),
+                    const Divider(height: AppSpacing.lg),
+                    _ligneInfo(Icons.phone_outlined, 'Téléphone', profil.telephone),
+                  ],
+                ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Paramètres du compte
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.lock_outline, color: AppColors.marine),
+                title: Text('Changer le mot de passe', style: AppTypography.bodyLarge),
+                trailing: const Icon(Icons.chevron_right, color: AppColors.grisMoyen),
+                onTap: _ouvrirChangementMotDePasse,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.logout, color: AppColors.erreur),
+                title: Text('Se déconnecter', style: AppTypography.bodyLarge.copyWith(color: AppColors.erreur)),
+                onTap: _seDeconnecter,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -205,6 +262,89 @@ class _ProfilScreenState extends State<ProfilScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Formulaire de changement de mot de passe, affiché en feuille modale.
+class _FormulaireChangementMotDePasse extends StatefulWidget {
+  const _FormulaireChangementMotDePasse();
+
+  @override
+  State<_FormulaireChangementMotDePasse> createState() => _FormulaireChangementMotDePasseState();
+}
+
+class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMotDePasse> {
+  final _actuelController = TextEditingController();
+  final _nouveauController = TextEditingController();
+  final _confirmationController = TextEditingController();
+  bool _chargement = false;
+  String? _erreurNouveau;
+  String? _erreurConfirmation;
+
+  @override
+  void dispose() {
+    _actuelController.dispose();
+    _nouveauController.dispose();
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _valider() async {
+    setState(() {
+      _erreurNouveau = _nouveauController.text.length < 6 ? 'Au moins 6 caractères' : null;
+      _erreurConfirmation =
+          _confirmationController.text != _nouveauController.text ? 'Ne correspond pas' : null;
+    });
+
+    if (_erreurNouveau != null || _erreurConfirmation != null) return;
+
+    setState(() => _chargement = true);
+    // --- SIMULATION TEMPORAIRE ---
+    // Sera remplacé par : await dio.put('/password', data: {...})
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Mot de passe modifié avec succès.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Changer le mot de passe', style: AppTypography.h2),
+          const SizedBox(height: AppSpacing.lg),
+          AppTextField(label: 'Mot de passe actuel', controller: _actuelController, obscureText: true),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            label: 'Nouveau mot de passe',
+            controller: _nouveauController,
+            obscureText: true,
+            errorText: _erreurNouveau,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            label: 'Confirmer le nouveau mot de passe',
+            controller: _confirmationController,
+            obscureText: true,
+            errorText: _erreurConfirmation,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(label: 'Valider', onPressed: _valider, isLoading: _chargement),
+        ],
+      ),
     );
   }
 }

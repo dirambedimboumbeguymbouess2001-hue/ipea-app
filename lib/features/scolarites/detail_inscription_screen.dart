@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -97,23 +98,45 @@ class _DetailInscriptionScreenState extends State<DetailInscriptionScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(scolarite.niveau, style: AppTypography.h2),
-                StatusBadge(label: scolarite.statut, type: _typeSelonStatut(scolarite.statut)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(scolarite.niveau, style: AppTypography.h2),
+                    StatusBadge(label: scolarite.statut, type: _typeSelonStatut(scolarite.statut)),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _ligneInfo('Filière', scolarite.filiere),
+                _ligneInfo('Année académique', scolarite.annee),
+                _ligneInfo('Identifiant', scolarite.id),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-            _ligneInfo('Filière', scolarite.filiere),
-            _ligneInfo('Année académique', scolarite.annee),
-            _ligneInfo('Identifiant', scolarite.id),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppCard(
+            onTap: () => context.push('/scolarites/${scolarite.id}/enseignants'),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.people_outline, color: AppColors.marine),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text('Enseignants rattachés', style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.grisMoyen),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
