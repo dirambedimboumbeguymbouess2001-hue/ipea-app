@@ -1,20 +1,23 @@
-/// Espacements et rayons de bordure standardisés de l'application.
-/// Utiliser ces constantes plutôt que des valeurs numériques codées
-/// en dur, pour garantir une cohérence visuelle sur tous les écrans.
+/// Espacements et rayons de bordure, conformes à la section 5 de la
+/// charte graphique (BTS-CG-2026-01). Toutes les valeurs dérivent d'une
+/// base de 8 points. Utiliser ces constantes plutôt que des valeurs
+/// numériques codées en dur.
 class AppSpacing {
   AppSpacing._();
 
-  // Espacements (padding, margin, gap)
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 16;
   static const double lg = 24;
   static const double xl = 32;
+
+  // Conservé pour compatibilité avec le code déjà écrit (non prévu par
+  // la charte, mais utile ponctuellement pour des respirations plus
+  // marquées — ex: écran de démarrage).
   static const double xxl = 48;
 
-  // Rayons de bordure (cards, boutons, champs de texte)
-  static const double radiusSmall = 8;
-  static const double radiusMedium = 12;
-  static const double radiusLarge = 16;
-  static const double radiusFull = 999; // pour les éléments parfaitement arrondis
+  static const double radiusSmall = 8; // badges, puces de statut
+  static const double radiusMedium = 12; // champs de saisie, boutons
+  static const double radiusLarge = 16; // cartes, feuilles modales
+  static const double radiusFull = 999;
 }
