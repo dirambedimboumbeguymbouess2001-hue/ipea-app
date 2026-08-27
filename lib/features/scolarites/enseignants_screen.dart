@@ -97,8 +97,7 @@ class _EnseignantsScreenState extends State<EnseignantsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: enseignants.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
+separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
         final enseignant = enseignants[index];
         return AppCard(
           child: Row(

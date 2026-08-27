@@ -108,8 +108,7 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: scolarites.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
+separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
         final scolarite = scolarites[index];
         return AppCard(
           // Navigue vers l'écran de détail, en restant dans le même

@@ -109,8 +109,7 @@ class _NotesScreenState extends State<NotesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: notes.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
+separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
         final matiere = notes[index];
         return AppCard(
           child: Column(
