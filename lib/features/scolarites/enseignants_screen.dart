@@ -6,16 +6,7 @@ import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/empty_state.dart';
-
-/// Modèle simple, propre à cet écran — pas besoin d'un fichier séparé
-/// pour une structure aussi légère.
-class Enseignant {
-  final String nom;
-  final String matiere;
-  final String email;
-
-  const Enseignant({required this.nom, required this.matiere, required this.email});
-}
+import 'data/enseignants_repository.dart';
 
 class EnseignantsScreen extends StatefulWidget {
   final String inscriptionId;
@@ -27,6 +18,8 @@ class EnseignantsScreen extends StatefulWidget {
 }
 
 class _EnseignantsScreenState extends State<EnseignantsScreen> {
+  final _repository = EnseignantsRepository();
+
   List<Enseignant>? _enseignants;
   bool _enErreur = false;
   bool _enChargement = true;
@@ -43,19 +36,20 @@ class _EnseignantsScreenState extends State<EnseignantsScreen> {
       _enErreur = false;
     });
 
-    // --- SIMULATION TEMPORAIRE ---
-    // Sera remplacé par : await dio.get('/enseignants/${widget.inscriptionId}')
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-    setState(() {
-      _enseignants = const [
-        Enseignant(nom: 'M. Obiang Ndong', matiere: 'Mathématiques', email: 'obiang.ndong@ipea.ga'),
-        Enseignant(nom: 'Mme Bibang Ella', matiere: 'Programmation Flutter', email: 'bibang.ella@ipea.ga'),
-        Enseignant(nom: 'M. Mba Allogho', matiere: 'Anglais', email: 'mba.allogho@ipea.ga'),
-      ];
-      _enChargement = false;
-    });
+    try {
+      final enseignants = await _repository.obtenirEnseignants(widget.inscriptionId);
+      if (!mounted) return;
+      setState(() {
+        _enseignants = enseignants;
+        _enChargement = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _enErreur = true;
+        _enChargement = false;
+      });
+    }
   }
 
   @override
@@ -88,7 +82,7 @@ class _EnseignantsScreenState extends State<EnseignantsScreen> {
 
     final enseignants = _enseignants!;
     if (enseignants.isEmpty) {
-      return EmptyState(
+      return const EmptyState(
         icon: Icons.people_outline,
         message: 'Aucun enseignant rattaché à cette inscription pour le moment.',
       );
@@ -97,7 +91,8 @@ class _EnseignantsScreenState extends State<EnseignantsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: enseignants.length,
-separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, index) {
         final enseignant = enseignants[index];
         return AppCard(
           child: Row(

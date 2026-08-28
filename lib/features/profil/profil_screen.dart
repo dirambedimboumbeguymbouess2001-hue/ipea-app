@@ -9,6 +9,7 @@ import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
+import '../connexion/data/auth_repository.dart';
 import 'data/profil_models.dart';
 import 'data/profil_repository.dart';
 
@@ -21,6 +22,7 @@ class ProfilScreen extends StatefulWidget {
 
 class _ProfilScreenState extends State<ProfilScreen> {
   final _repository = ProfilRepository();
+  final _authRepository = AuthRepository();
 
   ProfilEtudiant? _profil;
   bool _enErreur = false;
@@ -71,25 +73,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _enregistrer() async {
     setState(() => _enregistrementEnCours = true);
 
-    await _repository.mettreAJourProfil(
-      email: _emailController.text,
-      telephone: _telephoneController.text,
-    );
+    await _repository.mettreAJourProfil(email: _emailController.text, telephone: _telephoneController.text);
 
     if (!mounted) return;
     setState(() {
       _enregistrementEnCours = false;
       _modeEdition = false;
-      _profil = _profil?.copyWith(
-        email: _emailController.text,
-        telephone: _telephoneController.text,
-      );
+      _profil = _profil?.copyWith(email: _emailController.text, telephone: _telephoneController.text);
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profil mis à jour avec succès.')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil mis à jour avec succès.')));
   }
 
   Future<void> _seDeconnecter() async {
@@ -99,10 +93,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         title: const Text('Déconnexion'),
         content: const Text('Voulez-vous vraiment vous déconnecter ?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Annuler')),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text('Déconnexion', style: TextStyle(color: AppColors.erreur)),
@@ -112,6 +103,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
 
     if (confirme == true) {
+      // Révoque le token côté serveur avant de l'effacer localement.
+      await _authRepository.deconnecter();
       await AuthState.instance.deconnecter();
       if (mounted) context.go('/connexion');
     }
@@ -125,7 +118,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLarge)),
       ),
-      builder: (context) => const _FormulaireChangementMotDePasse(),
+      builder: (context) => _FormulaireChangementMotDePasse(repository: _repository),
     );
   }
 
@@ -137,10 +130,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         title: const Text('Mon profil'),
         actions: [
           if (!_enChargement && !_enErreur && !_modeEdition)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => setState(() => _modeEdition = true),
-            ),
+            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => setState(() => _modeEdition = true)),
         ],
       ),
       body: _construireContenu(),
@@ -148,9 +138,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
   }
 
   Widget _construireContenu() {
-    if (_enErreur) {
-      return ErrorState(onRetry: _charger);
-    }
+    if (_enErreur) return ErrorState(onRetry: _charger);
 
     if (_enChargement) {
       return const Padding(
@@ -192,11 +180,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(label: 'Téléphone', controller: _telephoneController, keyboardType: TextInputType.phone),
                     const SizedBox(height: AppSpacing.lg),
-                    AppButton(
-                      label: 'Enregistrer',
-                      onPressed: _enregistrer,
-                      isLoading: _enregistrementEnCours,
-                    ),
+                    AppButton(label: 'Enregistrer', onPressed: _enregistrer, isLoading: _enregistrementEnCours),
                     const SizedBox(height: AppSpacing.sm),
                     AppButton(
                       label: 'Annuler',
@@ -223,7 +207,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // Paramètres du compte
         AppCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -266,9 +249,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
   }
 }
 
-/// Formulaire de changement de mot de passe, affiché en feuille modale.
 class _FormulaireChangementMotDePasse extends StatefulWidget {
-  const _FormulaireChangementMotDePasse();
+  final ProfilRepository repository;
+
+  const _FormulaireChangementMotDePasse({required this.repository});
 
   @override
   State<_FormulaireChangementMotDePasse> createState() => _FormulaireChangementMotDePasseState();
@@ -281,6 +265,7 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
   bool _chargement = false;
   String? _erreurNouveau;
   String? _erreurConfirmation;
+  String? _erreurGenerale;
 
   @override
   void dispose() {
@@ -293,22 +278,29 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
   Future<void> _valider() async {
     setState(() {
       _erreurNouveau = _nouveauController.text.length < 6 ? 'Au moins 6 caractères' : null;
-      _erreurConfirmation =
-          _confirmationController.text != _nouveauController.text ? 'Ne correspond pas' : null;
+      _erreurConfirmation = _confirmationController.text != _nouveauController.text ? 'Ne correspond pas' : null;
+      _erreurGenerale = null;
     });
 
     if (_erreurNouveau != null || _erreurConfirmation != null) return;
 
     setState(() => _chargement = true);
-    // --- SIMULATION TEMPORAIRE ---
-    // Sera remplacé par : await dio.put('/password', data: {...})
-    await Future.delayed(const Duration(seconds: 1));
 
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mot de passe modifié avec succès.')),
-    );
+    try {
+      await widget.repository.changerMotDePasse(
+        motDePasseActuel: _actuelController.text,
+        nouveauMotDePasse: _nouveauController.text,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mot de passe modifié avec succès.')));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _erreurGenerale = 'Mot de passe actuel incorrect.');
+    } finally {
+      if (mounted) setState(() => _chargement = false);
+    }
   }
 
   @override
@@ -326,6 +318,10 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
         children: [
           Text('Changer le mot de passe', style: AppTypography.h2),
           const SizedBox(height: AppSpacing.lg),
+          if (_erreurGenerale != null) ...[
+            Text(_erreurGenerale!, style: AppTypography.bodySmall.copyWith(color: AppColors.erreur)),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           AppTextField(label: 'Mot de passe actuel', controller: _actuelController, obscureText: true),
           const SizedBox(height: AppSpacing.md),
           AppTextField(

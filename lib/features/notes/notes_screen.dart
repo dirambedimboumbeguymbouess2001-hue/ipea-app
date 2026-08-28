@@ -7,6 +7,7 @@ import '../../shared/widgets/status_badge.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../scolarites/data/scolarites_repository.dart';
 import 'data/notes_models.dart';
 import 'data/notes_repository.dart';
 
@@ -18,7 +19,8 @@ class NotesScreen extends StatefulWidget {
 }
 
 class _NotesScreenState extends State<NotesScreen> {
-  final _repository = NotesRepository();
+  final _notesRepository = NotesRepository();
+  final _scolaritesRepository = ScolaritesRepository();
 
   List<NoteMatiere>? _notes;
   bool _enErreur = false;
@@ -37,10 +39,21 @@ class _NotesScreenState extends State<NotesScreen> {
     });
 
     try {
-      // "etu-001" est un identifiant temporaire — sera remplacé par
-      // le véritable identifiant de l'étudiant connecté, une fois
-      // l'authentification branchée à la vraie API.
-      final notes = await _repository.obtenirNotes('etu-001');
+      // L'API attend un identifiant d'INSCRIPTION pour les notes
+      // (GET /notes/{id}), pas un identifiant d'étudiant générique —
+      // on commence donc par retrouver la scolarité active.
+      final scolariteActive = await _scolaritesRepository.obtenirScolariteActive();
+
+      if (scolariteActive == null) {
+        if (!mounted) return;
+        setState(() {
+          _notes = [];
+          _enChargement = false;
+        });
+        return;
+      }
+
+      final notes = await _notesRepository.obtenirNotes(scolariteActive.id);
       if (!mounted) return;
       setState(() {
         _notes = notes;
@@ -55,8 +68,6 @@ class _NotesScreenState extends State<NotesScreen> {
     }
   }
 
-  /// Indique la couleur du badge selon le niveau de la moyenne —
-  /// simple repère visuel pour l'étudiant, pas une règle officielle.
   StatusType _typeSelonMoyenne(double moyenne) {
     if (moyenne >= 14) return StatusType.succes;
     if (moyenne >= 10) return StatusType.avertissement;
@@ -95,7 +106,6 @@ class _NotesScreenState extends State<NotesScreen> {
 
     final notes = _notes!;
 
-    // État VIDE — aucune note disponible pour l'instant
     if (notes.isEmpty) {
       return EmptyState(
         icon: Icons.grade_outlined,
@@ -105,11 +115,11 @@ class _NotesScreenState extends State<NotesScreen> {
       );
     }
 
-    // État SUCCÈS
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: notes.length,
-separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, index) {
         final matiere = notes[index];
         return AppCard(
           child: Column(
@@ -130,10 +140,7 @@ separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuil
                   ),
                 ],
               ),
-              Text(
-                'Coefficient ${matiere.coefficient.toStringAsFixed(0)}',
-                style: AppTypography.bodySmall,
-              ),
+              Text('Coefficient ${matiere.coefficient.toStringAsFixed(0)}', style: AppTypography.bodySmall),
               const Divider(height: AppSpacing.lg),
               ...matiere.evaluations.map(
                 (eval) => Padding(

@@ -38,8 +38,7 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
     });
 
     try {
-      final scolarites = await _repository.obtenirScolarites('etu-001');
-      if (!mounted) return;
+final scolarites = await _repository.obtenirScolarites();      if (!mounted) return;
       setState(() {
         _scolarites = scolarites;
         _enChargement = false;

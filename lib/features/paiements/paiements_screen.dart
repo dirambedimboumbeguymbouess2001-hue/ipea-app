@@ -36,8 +36,7 @@ class _PaiementsScreenState extends State<PaiementsScreen> {
     });
 
     try {
-      final situation = await _repository.obtenirSituation('etu-001');
-      if (!mounted) return;
+final situation = await _repository.obtenirSituation();      if (!mounted) return;
       setState(() {
         _situation = situation;
         _enChargement = false;

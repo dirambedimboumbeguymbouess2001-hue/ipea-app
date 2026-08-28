@@ -1,30 +1,46 @@
+import '../../scolarites/data/scolarites_repository.dart';
+import '../../paiements/data/paiements_repository.dart';
+import '../../notes/data/notes_repository.dart';
+import '../../profil/data/profil_repository.dart';
 import 'tableau_de_bord_models.dart';
 
-/// Porte d'accès unique aux données du tableau de bord.
-///
-/// IMPORTANT : quand la documentation de l'API sera disponible, seul le
-/// contenu de la méthode `obtenirDonnees` devra être modifié (remplacer
-/// la simulation ci-dessous par un vrai appel Dio vers l'API). Aucun
-/// autre fichier du projet — en particulier l'écran — n'aura besoin
-/// d'être touché.
+/// IMPORTANT : la note de cadrage (BTS-NC-2026-01) ne prévoit aucun
+/// endpoint dédié "tableau de bord" parmi les 11 points d'accès —
+/// ces données sont donc composées à partir de quatre appels distincts
+/// déjà utilisés ailleurs dans l'application :
+/// - GET /profile (pour le nom de l'étudiant)
+/// - GET /scolarites (pour la scolarité active)
+/// - GET /paiements (pour le reste à payer)
+/// - GET /notes/{id} (pour la moyenne générale)
 class TableauDeBordRepository {
+  final _scolaritesRepository = ScolaritesRepository();
+  final _paiementsRepository = PaiementsRepository();
+  final _notesRepository = NotesRepository();
+  final _profilRepository = ProfilRepository();
+
   Future<TableauDeBordData> obtenirDonnees() async {
-    // --- SIMULATION TEMPORAIRE, en attendant la documentation API ---
-    // Le délai artificiel imite le temps d'un vrai appel réseau, pour
-    // pouvoir tester l'état de chargement dès maintenant.
-    await Future.delayed(const Duration(seconds: 1));
+    final profil = await _profilRepository.obtenirProfil();
+    final scolariteActive = await _scolaritesRepository.obtenirScolariteActive();
+    final situation = await _paiementsRepository.obtenirSituation();
 
-    return const TableauDeBordData(
-      nomEtudiant: 'Guy Dirambe',
-      moyenneGenerale: 14.2,
-      resteAPayer: 85000,
-      scolariteNom: 'Licence 2 Informatique',
-      scolariteAnnee: '2025-2026',
-      scolariteStatut: 'Actif',
+    double moyenneGenerale = 0;
+    if (scolariteActive != null) {
+      final notes = await _notesRepository.obtenirNotes(scolariteActive.id);
+      if (notes.isNotEmpty) {
+        // Moyenne pondérée par coefficient, simple et standard.
+        final sommePonderee = notes.fold<double>(0, (s, n) => s + n.moyenne * n.coefficient);
+        final sommeCoefficients = notes.fold<double>(0, (s, n) => s + n.coefficient);
+        moyenneGenerale = sommeCoefficients > 0 ? sommePonderee / sommeCoefficients : 0;
+      }
+    }
+
+    return TableauDeBordData(
+      nomEtudiant: profil.nomComplet,
+      moyenneGenerale: double.parse(moyenneGenerale.toStringAsFixed(1)),
+      resteAPayer: situation.resteAPayer,
+      scolariteNom: scolariteActive != null ? '${scolariteActive.niveau} — ${scolariteActive.filiere}' : '—',
+      scolariteAnnee: scolariteActive?.annee ?? '—',
+      scolariteStatut: scolariteActive?.statut ?? '—',
     );
-
-    // --- CE QUE ÇA DEVIENDRA UNE FOIS L'API DISPONIBLE (exemple) ---
-    // final reponse = await dio.get('/tableau-de-bord');
-    // return TableauDeBordData.fromJson(reponse.data);
   }
 }

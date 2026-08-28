@@ -42,8 +42,7 @@ class _DetailInscriptionScreenState extends State<DetailInscriptionScreen> {
       // Pour l'instant, on récupère toute la liste puis on filtre —
       // l'API réelle proposera probablement une route dédiée
       // GET /inscriptions/{id} qui renverra directement le bon élément.
-      final toutes = await _repository.obtenirScolarites('etu-001');
-      final trouvee = toutes.where((s) => s.id == widget.inscriptionId).firstOrNull;
+final toutes = await _repository.obtenirScolarites();      final trouvee = toutes.where((s) => s.id == widget.inscriptionId).firstOrNull;
 
       if (!mounted) return;
       setState(() {
