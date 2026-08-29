@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -83,7 +84,7 @@ class _EnseignantsScreenState extends State<EnseignantsScreen> {
     final enseignants = _enseignants!;
     if (enseignants.isEmpty) {
       return const EmptyState(
-        icon: Icons.people_outline,
+        icon: Symbols.group_rounded,
         message: 'Aucun enseignant rattaché à cette inscription pour le moment.',
       );
     }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// État "vide" réutilisable — à afficher quand un écran connecté à l'API
-/// a reçu une réponse valide mais sans aucune donnée (ex: aucune note
-/// disponible pour l'instant). Un des 4 états obligatoires imposés par
-/// la charte graphique sur tout écran consommant l'API.
+/// a reçu une réponse valide mais sans aucune donnée. Un des 4 états
+/// obligatoires imposés par la charte graphique.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -15,7 +15,7 @@ class EmptyState extends StatelessWidget {
 
   const EmptyState({
     super.key,
-    this.icon = Icons.inbox_outlined,
+    this.icon = Symbols.inbox_rounded,
     required this.message,
     this.actionLabel,
     this.onAction,

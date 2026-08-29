@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -38,7 +39,8 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
     });
 
     try {
-final scolarites = await _repository.obtenirScolarites();      if (!mounted) return;
+      final scolarites = await _repository.obtenirScolarites();
+      if (!mounted) return;
       setState(() {
         _scolarites = scolarites;
         _enChargement = false;
@@ -97,7 +99,7 @@ final scolarites = await _repository.obtenirScolarites();      if (!mounted) ret
 
     if (scolarites.isEmpty) {
       return EmptyState(
-        icon: Icons.school_outlined,
+        icon: Symbols.school_rounded,
         message: 'Aucune scolarité enregistrée pour le moment.',
         actionLabel: 'Actualiser',
         onAction: _charger,
@@ -107,11 +109,10 @@ final scolarites = await _repository.obtenirScolarites();      if (!mounted) ret
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: scolarites.length,
-separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuilder: (context, index) {
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, index) {
         final scolarite = scolarites[index];
         return AppCard(
-          // Navigue vers l'écran de détail, en restant dans le même
-          // onglet grâce à la structure StatefulShellRoute déjà en place.
           onTap: () => context.push('/scolarites/${scolarite.id}'),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,7 +132,7 @@ separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),      itemBuil
               ),
               StatusBadge(label: scolarite.statut, type: _typeSelonStatut(scolarite.statut)),
               const SizedBox(width: AppSpacing.sm),
-              const Icon(Icons.chevron_right, color: AppColors.grisMoyen),
+              const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
             ],
           ),
         );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -116,7 +117,7 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
                 obscureText: !_motDePasseVisible,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _motDePasseVisible ? Icons.visibility_off : Icons.visibility,
+                    _motDePasseVisible ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
                     color: AppColors.grisMoyen,
                   ),
                   onPressed: () => setState(() => _motDePasseVisible = !_motDePasseVisible),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -39,11 +40,7 @@ class _DetailInscriptionScreenState extends State<DetailInscriptionScreen> {
     });
 
     try {
-      // Pour l'instant, on récupère toute la liste puis on filtre —
-      // l'API réelle proposera probablement une route dédiée
-      // GET /inscriptions/{id} qui renverra directement le bon élément.
-final toutes = await _repository.obtenirScolarites();      final trouvee = toutes.where((s) => s.id == widget.inscriptionId).firstOrNull;
-
+      final trouvee = await _repository.obtenirDetail(widget.inscriptionId);
       if (!mounted) return;
       setState(() {
         _scolarite = trouvee;
@@ -126,12 +123,12 @@ final toutes = await _repository.obtenirScolarites();      final trouvee = toute
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.people_outline, color: AppColors.marine),
+                    const Icon(Symbols.group_rounded, color: AppColors.marine),
                     const SizedBox(width: AppSpacing.sm),
                     Text('Enseignants rattachés', style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
                   ],
                 ),
-                const Icon(Icons.chevron_right, color: AppColors.grisMoyen),
+                const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
               ],
             ),
           ),

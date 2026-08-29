@@ -4,7 +4,7 @@ import '../../core/theme/app_spacing.dart';
 
 /// Carte standard de l'application. Toujours utiliser ce widget plutôt
 /// qu'un Container/Card nu, pour garantir un style uniforme (arrondi,
-/// ombre légère, padding) sur tous les blocs de contenu.
+/// bordure, ombre légère, padding) sur tous les blocs de contenu.
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -26,6 +26,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.blanc,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+        border: Border.all(color: AppColors.bordure, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.noir.withValues(alpha: 0.05),

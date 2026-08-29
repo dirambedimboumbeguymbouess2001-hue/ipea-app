@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -103,7 +104,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
 
     if (confirme == true) {
-      // Révoque le token côté serveur avant de l'effacer localement.
       await _authRepository.deconnecter();
       await AuthState.instance.deconnecter();
       if (mounted) context.go('/connexion');
@@ -130,7 +130,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         title: const Text('Mon profil'),
         actions: [
           if (!_enChargement && !_enErreur && !_modeEdition)
-            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => setState(() => _modeEdition = true)),
+            IconButton(icon: const Icon(Symbols.edit_rounded), onPressed: () => setState(() => _modeEdition = true)),
         ],
       ),
       body: _construireContenu(),
@@ -199,9 +199,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 )
               : Column(
                   children: [
-                    _ligneInfo(Icons.email_outlined, 'Email', profil.email),
+                    _ligneInfo(Symbols.mail_rounded, 'Email', profil.email),
                     const Divider(height: AppSpacing.lg),
-                    _ligneInfo(Icons.phone_outlined, 'Téléphone', profil.telephone),
+                    _ligneInfo(Symbols.call_rounded, 'Téléphone', profil.telephone),
                   ],
                 ),
         ),
@@ -212,14 +212,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
           child: Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.lock_outline, color: AppColors.marine),
+                leading: const Icon(Symbols.lock_rounded, color: AppColors.marine),
                 title: Text('Changer le mot de passe', style: AppTypography.bodyLarge),
-                trailing: const Icon(Icons.chevron_right, color: AppColors.grisMoyen),
+                trailing: const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
                 onTap: _ouvrirChangementMotDePasse,
               ),
               const Divider(height: 1),
               ListTile(
-                leading: Icon(Icons.logout, color: AppColors.erreur),
+                leading: Icon(Symbols.logout_rounded, color: AppColors.erreur),
                 title: Text('Se déconnecter', style: AppTypography.bodyLarge.copyWith(color: AppColors.erreur)),
                 onTap: _seDeconnecter,
               ),

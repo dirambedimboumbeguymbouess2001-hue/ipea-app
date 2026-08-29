@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -39,9 +40,6 @@ class _NotesScreenState extends State<NotesScreen> {
     });
 
     try {
-      // L'API attend un identifiant d'INSCRIPTION pour les notes
-      // (GET /notes/{id}), pas un identifiant d'étudiant générique —
-      // on commence donc par retrouver la scolarité active.
       final scolariteActive = await _scolaritesRepository.obtenirScolariteActive();
 
       if (scolariteActive == null) {
@@ -108,7 +106,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
     if (notes.isEmpty) {
       return EmptyState(
-        icon: Icons.grade_outlined,
+        icon: Symbols.grade_rounded,
         message: 'Aucune note disponible pour le moment.',
         actionLabel: 'Actualiser',
         onAction: _charger,

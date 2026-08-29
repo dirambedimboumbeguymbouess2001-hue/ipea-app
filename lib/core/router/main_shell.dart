@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Coquille de navigation principale : affiche la barre de navigation basse
 /// (Accueil, Scolarité, Notes, Profil) en permanence, tout en conservant
 /// l'état de chaque onglet lors du changement (grâce à StatefulShellRoute).
+///
+/// Icônes en Material Symbols Rounded, conformément à la charte graphique
+/// (section technique, BTS-CG-2026-01).
 class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -18,8 +22,6 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
-          // goBranch avec initialLocation:true réinitialise l'onglet
-          // si on retape sur celui déjà actif (comportement standard)
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
@@ -32,23 +34,23 @@ class MainShell extends StatelessWidget {
         ),
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.marine),
+            icon: const Icon(Symbols.home_rounded),
+            selectedIcon: Icon(Symbols.home_rounded, color: AppColors.marine, fill: 1),
             label: 'Accueil',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school, color: AppColors.marine),
+            icon: const Icon(Symbols.school_rounded),
+            selectedIcon: Icon(Symbols.school_rounded, color: AppColors.marine, fill: 1),
             label: 'Scolarité',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.grade_outlined),
-            selectedIcon: Icon(Icons.grade, color: AppColors.marine),
+            icon: const Icon(Symbols.grade_rounded),
+            selectedIcon: Icon(Symbols.grade_rounded, color: AppColors.marine, fill: 1),
             label: 'Notes',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.marine),
+            icon: const Icon(Symbols.person_rounded),
+            selectedIcon: Icon(Symbols.person_rounded, color: AppColors.marine, fill: 1),
             label: 'Profil',
           ),
         ],
