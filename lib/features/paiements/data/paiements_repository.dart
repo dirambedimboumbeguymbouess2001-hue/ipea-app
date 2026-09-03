@@ -1,13 +1,11 @@
 import '../../../core/network/api_client.dart';
 import 'paiements_models.dart';
 
-/// Endpoint exact d'après la note de cadrage : GET /api/mobile/paiements
-/// (Sanctum) — pas de paramètre d'identifiant, le token identifie
-/// déjà l'étudiant côté serveur.
+/// Endpoint exact : GET /paiements (Sanctum). Non modifié — prêt à
+/// passer en réel dès validation de l'encadrant (ApiFlags.paiements).
 class PaiementsRepository {
   Future<SituationPaiements> obtenirSituation() async {
-    if (!kUtiliserApiReelle) {
-      // --- SIMULATION TEMPORAIRE ---
+    if (!ApiFlags.paiements) {
       await Future.delayed(const Duration(seconds: 1));
       return SituationPaiements(
         montantTotal: 450000,

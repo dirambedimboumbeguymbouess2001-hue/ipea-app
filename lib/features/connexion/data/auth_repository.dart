@@ -1,14 +1,11 @@
 import '../../../core/network/api_client.dart';
 
-/// Repository de connexion — endpoint exact d'après la note de cadrage :
-/// POST /api/mobile/login (public)
+/// Endpoint exact : POST /login (public). Non modifié depuis la note
+/// de cadrage d'origine — prêt à passer en réel dès validation de
+/// l'encadrant (ApiFlags.authentification).
 class AuthRepository {
-  /// Retourne le token Sanctum en cas de succès. Lève une exception
-  /// en cas d'échec (identifiants invalides, réseau, etc.) — l'écran
-  /// appelant doit l'attraper pour afficher un message d'erreur adapté.
   Future<String> connecter({required String identifiant, required String motDePasse}) async {
-    if (!kUtiliserApiReelle) {
-      // --- SIMULATION TEMPORAIRE ---
+    if (!ApiFlags.authentification) {
       await Future.delayed(const Duration(seconds: 1));
       return 'faux-token-de-test';
     }
@@ -18,19 +15,15 @@ class AuthRepository {
       'mot_de_passe': motDePasse,
     });
 
-    // Le nom exact du champ contenant le token dans la réponse JSON
-    // (ex: 'token', 'access_token'...) n'est pas précisé dans la note
-    // de cadrage — à ajuster une fois la réponse réelle de l'API connue.
     return reponse.data['token'] as String;
   }
 
-  /// POST /api/mobile/active (public)
   Future<void> activerCompte({
     required String matricule,
     required String code,
     required String nouveauMotDePasse,
   }) async {
-    if (!kUtiliserApiReelle) {
+    if (!ApiFlags.authentification) {
       await Future.delayed(const Duration(seconds: 1));
       return;
     }
@@ -42,10 +35,8 @@ class AuthRepository {
     });
   }
 
-  /// POST /api/mobile/logout (Sanctum) — révoque le token côté serveur.
   Future<void> deconnecter() async {
-    if (!kUtiliserApiReelle) return;
-
+    if (!ApiFlags.authentification) return;
     await ApiClient.instance.dio.post('/logout');
   }
 }

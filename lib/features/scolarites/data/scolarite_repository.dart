@@ -1,20 +1,14 @@
 import '../../../core/network/api_client.dart';
 import 'scolarite_models.dart';
 
-/// Repository fusionné : remplace les anciens ScolaritesRepository et
-/// NotesRepository, suite à la fusion des écrans Scolarité et Notes
-/// demandée par l'encadrant.
-///
-/// IMPORTANT : cette hiérarchie (Classe > Semestre > Modules) ne
-/// correspond plus exactement aux 11 endpoints d'origine de la note
-/// de cadrage (BTS-NC-2026-01), qui prévoyaient des scolarités "plates"
-/// (une par année) et des notes groupées par matière. Une clarification
-/// sur la structure réelle de l'API sera nécessaire avec l'encadrant
-/// avant le branchement réel — à ce stade, seule l'interface est prête.
+/// Structure Classe > Semestre > Modules — nouvelle forme de réponse,
+/// pas encore implémentée côté serveur. Reste en simulation
+/// (ApiFlags.scolarite) tant que l'encadrant n'a pas codé cette
+/// nouvelle version de l'endpoint /scolarites — voir
+/// SPECIFICATION_API_V2.md pour le contrat attendu exact.
 class ScolariteRepository {
   Future<List<Classe>> obtenirClasses() async {
-    if (!kUtiliserApiReelle) {
-      // --- SIMULATION TEMPORAIRE ---
+    if (!ApiFlags.scolarite) {
       await Future.delayed(const Duration(seconds: 1));
       return const [
         Classe(
@@ -71,9 +65,6 @@ class ScolariteRepository {
     return (reponse.data as List).map((j) => Classe.fromJson(j)).toList();
   }
 
-  /// Pratique pour le tableau de bord : renvoie la dernière classe et
-  /// son dernier semestre (par convention, considérés comme "actuels"
-  /// en l'absence d'un indicateur explicite côté API).
   Future<(Classe, Semestre)?> obtenirClasseEtSemestreActuels() async {
     final classes = await obtenirClasses();
     if (classes.isEmpty) return null;

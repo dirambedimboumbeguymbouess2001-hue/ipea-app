@@ -1,25 +1,49 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Interrupteur central : tant que `false`, tous les repositories
-/// continuent d'utiliser leurs données fictives. Une fois l'adresse
-/// de l'environnement de recette obtenue auprès de l'encadrant,
-/// passer à `true` et renseigner [kApiBaseUrl] ci-dessous.
-const bool kUtiliserApiReelle = false;
+/// Adresse de base réelle de l'API Mobile, communiquée par l'encadrant.
+const String kApiBaseUrl = 'https://api.ipea-gabon.ga/api/mobile';
 
-/// Adresse de base de l'API Mobile (module Laravel Sanctum), telle que
-/// décrite dans la note de cadrage BTS-NC-2026-01 (section 4).
-/// TODO : remplacer par l'adresse réelle de l'environnement de recette
-/// fournie par l'encadrant.
-const String kApiBaseUrl = 'https://TODO-A-COMPLETER.exemple.com/api/mobile';
+/// Interrupteurs indépendants par domaine fonctionnel.
+///
+/// Contrairement à un seul interrupteur global, chaque domaine peut être
+/// activé séparément dès que sa partie de l'API est prête côté serveur —
+/// utile ici car certains endpoints n'ont pas changé (Authentification,
+/// Paiements, Profil), tandis que d'autres attendent encore une nouvelle
+/// implémentation côté encadrant suite à la fusion Scolarité/Notes et à
+/// l'ajout de l'Accueil enrichi / de l'espace administration.
+class ApiFlags {
+  ApiFlags._();
+
+  /// POST /login, POST /active, POST /logout — endpoints inchangés,
+  /// déjà documentés dans la note de cadrage d'origine (BTS-NC-2026-01).
+  static const bool authentification = false;
+
+  /// GET /paiements — endpoint inchangé.
+  static const bool paiements = false;
+
+  /// GET /profile, PUT /profile, PUT /password — endpoints inchangés
+  /// dans leur principe (seule la restriction "email non modifiable"
+  /// doit être appliquée côté serveur, voir SPECIFICATION_API_V2.md).
+  static const bool profil = false;
+
+  /// Structure Classe > Semestre > Modules — nouvelle forme de réponse
+  /// attendue, à faire coder par l'encadrant (voir SPECIFICATION_API_V2.md).
+  /// Reste à false tant que cette nouvelle API n'existe pas.
+  static const bool scolarite = false;
+
+  /// Annonces de l'établissement sur l'écran d'accueil — endpoint qui
+  /// n'existe pas encore du tout, à créer (voir SPECIFICATION_API_V2.md).
+  static const bool accueil = false;
+
+  /// Espace administration (annonces, comptes, photos) — endpoints à
+  /// créer entièrement (voir SPECIFICATION_API_V2.md).
+  static const bool administration = false;
+}
 
 const _storage = FlutterSecureStorage();
 const _cleToken = 'token_sanctum';
 
-/// Client Dio unique, partagé par tous les repositories. Ajoute
-/// automatiquement le token Sanctum (Bearer) à chaque requête sortante,
-/// et stocke le token de façon chiffrée via flutter_secure_storage,
-/// conformément à la note de cadrage (section 6).
 class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();

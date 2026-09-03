@@ -1,16 +1,18 @@
 import '../../../core/network/api_client.dart';
 import 'profil_models.dart';
 
-/// Endpoints exacts d'après la note de cadrage :
-/// - GET /api/mobile/profile (Sanctum)
-/// - PUT /api/mobile/profile (Sanctum)
-/// - PUT /api/mobile/password (Sanctum)
+/// Endpoints : GET /profile, PUT /profile, PUT /password (Sanctum).
+/// Structure inchangée — prête à passer en réel dès validation de
+/// l'encadrant (ApiFlags.profil). IMPORTANT : PUT /profile n'envoie
+/// désormais plus jamais l'email (restriction demandée par
+/// l'encadrant — l'étudiant ne peut plus le modifier). Le serveur
+/// doit lui aussi refuser toute tentative de modification de l'email
+/// par ce endpoint, même si un client malveillant tentait de l'envoyer.
 class ProfilRepository {
   ProfilEtudiant? _profilEnCache;
 
   Future<ProfilEtudiant> obtenirProfil() async {
-    if (!kUtiliserApiReelle) {
-      // --- SIMULATION TEMPORAIRE ---
+    if (!ApiFlags.profil) {
       await Future.delayed(const Duration(seconds: 1));
       _profilEnCache ??= const ProfilEtudiant(
         nomComplet: 'Guy Dirambe Di Mboumbe',
@@ -25,17 +27,19 @@ class ProfilRepository {
     return ProfilEtudiant.fromJson(reponse.data);
   }
 
+  /// Seul le téléphone est modifiable par l'étudiant — voir
+  /// SPECIFICATION_API_V2.md, section Profil, pour la restriction
+  /// exacte attendue côté serveur.
   Future<void> mettreAJourProfil({required String email, required String telephone}) async {
-    if (!kUtiliserApiReelle) {
+    if (!ApiFlags.profil) {
       await Future.delayed(const Duration(milliseconds: 800));
       if (_profilEnCache != null) {
-        _profilEnCache = _profilEnCache!.copyWith(email: email, telephone: telephone);
+        _profilEnCache = _profilEnCache!.copyWith(telephone: telephone);
       }
       return;
     }
 
     await ApiClient.instance.dio.put('/profile', data: {
-      'email': email,
       'telephone': telephone,
     });
   }
@@ -44,7 +48,7 @@ class ProfilRepository {
     required String motDePasseActuel,
     required String nouveauMotDePasse,
   }) async {
-    if (!kUtiliserApiReelle) {
+    if (!ApiFlags.profil) {
       await Future.delayed(const Duration(seconds: 1));
       return;
     }
