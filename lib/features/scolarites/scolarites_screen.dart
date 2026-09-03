@@ -5,12 +5,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/status_badge.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/empty_state.dart';
-import 'data/scolarites_models.dart';
-import 'data/scolarites_repository.dart';
+import 'data/scolarite_models.dart';
+import 'data/scolarite_repository.dart';
 
 class ScolaritesScreen extends StatefulWidget {
   const ScolaritesScreen({super.key});
@@ -20,9 +19,9 @@ class ScolaritesScreen extends StatefulWidget {
 }
 
 class _ScolaritesScreenState extends State<ScolaritesScreen> {
-  final _repository = ScolaritesRepository();
+  final _repository = ScolariteRepository();
 
-  List<Scolarite>? _scolarites;
+  List<Classe>? _classes;
   bool _enErreur = false;
   bool _enChargement = true;
 
@@ -39,10 +38,10 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
     });
 
     try {
-      final scolarites = await _repository.obtenirScolarites();
+      final classes = await _repository.obtenirClasses();
       if (!mounted) return;
       setState(() {
-        _scolarites = scolarites;
+        _classes = classes;
         _enChargement = false;
       });
     } catch (_) {
@@ -54,22 +53,11 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
     }
   }
 
-  StatusType _typeSelonStatut(String statut) {
-    switch (statut) {
-      case 'Actif':
-        return StatusType.succes;
-      case 'Suspendu':
-        return StatusType.erreur;
-      default:
-        return StatusType.neutre;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.grisClair,
-      appBar: AppBar(title: const Text('Mes scolarités')),
+      appBar: AppBar(title: const Text('Ma scolarité')),
       body: RefreshIndicator(
         onRefresh: _charger,
         child: _construireContenu(),
@@ -89,18 +77,18 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
           2,
           (_) => const Padding(
             padding: EdgeInsets.only(bottom: AppSpacing.sm),
-            child: LoadingSkeleton(height: 80, borderRadius: BorderRadius.all(Radius.circular(12))),
+            child: LoadingSkeleton(height: 56, borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
         ),
       );
     }
 
-    final scolarites = _scolarites!;
+    final classes = _classes!.reversed.toList();
 
-    if (scolarites.isEmpty) {
+    if (classes.isEmpty) {
       return EmptyState(
         icon: Symbols.school_rounded,
-        message: 'Aucune scolarité enregistrée pour le moment.',
+        message: 'Aucune classe enregistrée pour le moment.',
         actionLabel: 'Actualiser',
         onAction: _charger,
       );
@@ -108,32 +96,33 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
 
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
-      itemCount: scolarites.length,
+      itemCount: classes.length,
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
-        final scolarite = scolarites[index];
+        final classe = classes[index];
         return AppCard(
-          onTap: () => context.push('/scolarites/${scolarite.id}'),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${scolarite.niveau} — ${scolarite.filiere}',
-                      style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text('Année ${scolarite.annee}', style: AppTypography.bodySmall),
-                  ],
-                ),
-              ),
-              StatusBadge(label: scolarite.statut, type: _typeSelonStatut(scolarite.statut)),
-              const SizedBox(width: AppSpacing.sm),
-              const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
-            ],
+          padding: EdgeInsets.zero,
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              title: Text(classe.nom, style: AppTypography.h3),
+              subtitle: Text('${classe.semestres.length} semestre(s)', style: AppTypography.bodySmall),
+              iconColor: AppColors.marine,
+              collapsedIconColor: AppColors.grisMoyen,
+              childrenPadding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              children: classe.semestres.map((semestre) {
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  title: Text(semestre.nom, style: AppTypography.bodyLarge),
+                  subtitle: Text(
+                    'Moyenne ${semestre.moyenne}/20 · ${semestre.totalCredits} crédits',
+                    style: AppTypography.bodySmall,
+                  ),
+                  trailing: const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
+                  onTap: () => context.push('/scolarites/${classe.id}/${semestre.id}'),
+                );
+              }).toList(),
+            ),
           ),
         );
       },

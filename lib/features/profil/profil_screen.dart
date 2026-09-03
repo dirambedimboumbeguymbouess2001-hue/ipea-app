@@ -31,7 +31,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
   bool _modeEdition = false;
   bool _enregistrementEnCours = false;
 
-  final _emailController = TextEditingController();
+  // Seul le téléphone est modifiable par l'étudiant — l'email est
+  // en lecture seule (restriction demandée par l'encadrant).
   final _telephoneController = TextEditingController();
 
   @override
@@ -42,7 +43,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
     _telephoneController.dispose();
     super.dispose();
   }
@@ -58,7 +58,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
       if (!mounted) return;
       setState(() {
         _profil = profil;
-        _emailController.text = profil.email;
         _telephoneController.text = profil.telephone;
         _enChargement = false;
       });
@@ -74,13 +73,18 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _enregistrer() async {
     setState(() => _enregistrementEnCours = true);
 
-    await _repository.mettreAJourProfil(email: _emailController.text, telephone: _telephoneController.text);
+    // L'email n'est jamais envoyé en mise à jour — seul le téléphone
+    // peut être modifié par l'étudiant.
+    await _repository.mettreAJourProfil(
+      email: _profil!.email,
+      telephone: _telephoneController.text,
+    );
 
     if (!mounted) return;
     setState(() {
       _enregistrementEnCours = false;
       _modeEdition = false;
-      _profil = _profil?.copyWith(email: _emailController.text, telephone: _telephoneController.text);
+      _profil = _profil?.copyWith(telephone: _telephoneController.text);
     });
 
     if (!mounted) return;
@@ -155,6 +159,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
         Center(
           child: Column(
             children: [
+              // Photo de profil : l'étudiant ne peut ni l'ajouter ni la
+              // modifier — seule l'administration en a la possibilité.
+              // Pas d'icône d'édition superposée sur cet avatar.
               CircleAvatar(
                 radius: 40,
                 backgroundColor: AppColors.marine,
@@ -176,7 +183,16 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppTextField(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
+                    // Email affiché mais non modifiable, même en mode édition
+                    Row(
+                      children: [
+                        Expanded(child: _ligneInfo(Symbols.mail_rounded, 'Email', profil.email)),
+                        Tooltip(
+                          message: 'L\'email ne peut pas être modifié',
+                          child: Icon(Symbols.lock_rounded, size: 16, color: AppColors.grisMoyen),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(label: 'Téléphone', controller: _telephoneController, keyboardType: TextInputType.phone),
                     const SizedBox(height: AppSpacing.lg),
@@ -190,7 +206,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           : () {
                               setState(() {
                                 _modeEdition = false;
-                                _emailController.text = profil.email;
                                 _telephoneController.text = profil.telephone;
                               });
                             },

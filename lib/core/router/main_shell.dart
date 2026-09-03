@@ -4,12 +4,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
-/// Coquille de navigation principale : affiche la barre de navigation basse
-/// (Accueil, Scolarité, Notes, Profil) en permanence, tout en conservant
-/// l'état de chaque onglet lors du changement (grâce à StatefulShellRoute).
-///
-/// Icônes en Material Symbols Rounded, conformément à la charte graphique
-/// (section technique, BTS-CG-2026-01).
+/// Coquille de navigation principale : 3 onglets (Accueil, Scolarité,
+/// Profil) — l'onglet Notes a été retiré suite à sa fusion dans
+/// l'écran Scolarité.
 class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -42,11 +39,6 @@ class MainShell extends StatelessWidget {
             icon: const Icon(Symbols.school_rounded),
             selectedIcon: Icon(Symbols.school_rounded, color: AppColors.marine, fill: 1),
             label: 'Scolarité',
-          ),
-          NavigationDestination(
-            icon: const Icon(Symbols.grade_rounded),
-            selectedIcon: Icon(Symbols.grade_rounded, color: AppColors.marine, fill: 1),
-            label: 'Notes',
           ),
           NavigationDestination(
             icon: const Icon(Symbols.person_rounded),

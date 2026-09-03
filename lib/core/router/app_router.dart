@@ -5,17 +5,17 @@ import '../../features/connexion/connexion_screen.dart';
 import '../../features/activation/activation_screen.dart';
 import '../../features/tableau_de_bord/tableau_de_bord_screen.dart';
 import '../../features/scolarites/scolarites_screen.dart';
-import '../../features/scolarites/detail_inscription_screen.dart';
-import '../../features/scolarites/enseignants_screen.dart';
-import '../../features/notes/notes_screen.dart';
+import '../../features/scolarites/semestre_detail_screen.dart';
 import '../../features/paiements/paiements_screen.dart';
 import '../../features/profil/profil_screen.dart';
 import 'main_shell.dart';
 
-/// Routeur centralisé de l'application, avec garde de route :
-/// - Un utilisateur non connecté ne peut accéder qu'à /, /connexion, /activation
-/// - Un utilisateur connecté est automatiquement renvoyé vers le tableau
-///   de bord s'il tente d'accéder à ces routes "publiques"
+/// Routeur centralisé de l'application, avec garde de route.
+///
+/// L'écran Notes a été fusionné dans Scolarité (accordéon Classe >
+/// Semestre > Modules) — la route /notes et l'onglet correspondant
+/// n'existent plus. L'accès aux enseignants a également été retiré
+/// à la demande de l'encadrant.
 class AppRouter {
   AppRouter._();
 
@@ -24,8 +24,6 @@ class AppRouter {
       initialLocation: '/',
       refreshListenable: authState,
       redirect: (context, state) {
-        // Tant que SharedPreferences n'a pas fini d'être lu, on ne
-        // redirige rien, pour éviter un aller-retour visuel trompeur.
         if (!authState.estInitialise) return null;
 
         final chemin = state.matchedLocation;
@@ -79,32 +77,16 @@ class AppRouter {
                   path: '/scolarites',
                   builder: (context, state) => const ScolaritesScreen(),
                   routes: [
+                    // Route imbriquée : /scolarites/:classeId/:semestreId
                     GoRoute(
-                      path: ':id',
+                      path: ':classeId/:semestreId',
                       builder: (context, state) {
-                        final id = state.pathParameters['id']!;
-                        return DetailInscriptionScreen(inscriptionId: id);
+                        final classeId = state.pathParameters['classeId']!;
+                        final semestreId = state.pathParameters['semestreId']!;
+                        return SemestreDetailScreen(classeId: classeId, semestreId: semestreId);
                       },
-                      routes: [
-                        // Route imbriquée : /scolarites/:id/enseignants
-                        GoRoute(
-                          path: 'enseignants',
-                          builder: (context, state) {
-                            final id = state.pathParameters['id']!;
-                            return EnseignantsScreen(inscriptionId: id);
-                          },
-                        ),
-                      ],
                     ),
                   ],
-                ),
-              ],
-            ),
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: '/notes',
-                  builder: (context, state) => const NotesScreen(),
                 ),
               ],
             ),

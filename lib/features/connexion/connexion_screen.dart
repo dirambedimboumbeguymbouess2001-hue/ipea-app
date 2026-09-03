@@ -70,7 +70,7 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.xl),
               Center(
                 child: Container(
                   width: 64,
@@ -84,10 +84,10 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('Connexion', style: AppTypography.h1, textAlign: TextAlign.center),
+              Text('IPEA Gabon', style: AppTypography.h1, textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.xs),
               Text('Accédez à votre espace étudiant', style: AppTypography.bodyMedium, textAlign: TextAlign.center),
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.xl),
 
               if (_erreurGenerale != null) ...[
                 Container(
@@ -146,6 +146,45 @@ class _ConnexionScreenState extends State<ConnexionScreen> {
                     'Activer mon compte',
                     style: AppTypography.bodyMedium.copyWith(color: AppColors.orFonce, fontWeight: FontWeight.w600),
                   ),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+              const Divider(),
+              const SizedBox(height: AppSpacing.md),
+
+              // Explication d'obtention de compte, ajoutée en bas de l'écran
+              // de connexion à la demande de l'encadrant.
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.grisClair,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Symbols.info_rounded, color: AppColors.marine, size: 18),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Vous n\'avez pas encore de compte ?',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.texteFPrincipal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Si vous êtes inscrit à l\'IPEA, rendez-vous au secrétariat avec votre '
+                      'matricule étudiant et votre adresse e-mail. Un code à 4 chiffres vous '
+                      'sera remis pour activer votre compte.',
+                      style: AppTypography.bodySmall,
+                    ),
+                  ],
                 ),
               ),
             ],
