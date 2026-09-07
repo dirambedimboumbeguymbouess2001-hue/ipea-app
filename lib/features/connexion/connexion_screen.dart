@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
+
 import '../../core/auth/auth_state.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 import 'data/auth_repository.dart';
@@ -18,171 +18,100 @@ class ConnexionScreen extends StatefulWidget {
 
 class _ConnexionScreenState extends State<ConnexionScreen> {
   final _repository = AuthRepository();
-  final _identifiantController = TextEditingController();
-  final _motDePasseController = TextEditingController();
-  bool _motDePasseVisible = false;
-  bool _chargement = false;
-  String? _erreurIdentifiant;
-  String? _erreurGenerale;
+  final _matriculeControleur = TextEditingController();
+  final _motDePasseControleur = TextEditingController();
+
+  bool _enChargement = false;
+  String? _erreur;
 
   @override
   void dispose() {
-    _identifiantController.dispose();
-    _motDePasseController.dispose();
+    _matriculeControleur.dispose();
+    _motDePasseControleur.dispose();
     super.dispose();
   }
 
   Future<void> _seConnecter() async {
     setState(() {
-      _erreurIdentifiant = _identifiantController.text.isEmpty ? 'Identifiant requis' : null;
-      _erreurGenerale = null;
+      _enChargement = true;
+      _erreur = null;
     });
-
-    if (_erreurIdentifiant != null) return;
-
-    setState(() => _chargement = true);
 
     try {
       final token = await _repository.connecter(
-        identifiant: _identifiantController.text,
-        motDePasse: _motDePasseController.text,
+        matricule: _matriculeControleur.text.trim(),
+        motDePasse: _motDePasseControleur.text,
       );
-
       await AuthState.instance.connecter(token);
-
-      if (!mounted) return;
-      context.go('/tableau-de-bord');
+      if (mounted) context.go('/tableau-de-bord');
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _erreurGenerale = 'Identifiant ou mot de passe incorrect.');
+      setState(() {
+        _erreur = 'Matricule ou mot de passe incorrect.';
+      });
     } finally {
-      if (mounted) setState(() => _chargement = false);
+      if (mounted) setState(() => _enChargement = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.blanc,
+      backgroundColor: AppColors.fondApplication,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: AppSpacing.xl),
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.or,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text('IPEA', style: AppTypography.bouton.copyWith(color: AppColors.marine)),
-                ),
+              Text('Connexion', style: AppTypography.h2),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Connectez-vous avec votre matricule IPEA.',
+                style: AppTypography.libelle,
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('IPEA Gabon', style: AppTypography.h1, textAlign: TextAlign.center),
-              const SizedBox(height: AppSpacing.xs),
-              Text('Accédez à votre espace étudiant', style: AppTypography.bodyMedium, textAlign: TextAlign.center),
-              const SizedBox(height: AppSpacing.xl),
-
-              if (_erreurGenerale != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.erreur.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
-                  ),
-                  child: Text(
-                    _erreurGenerale!,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.erreur),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-
               AppTextField(
-                label: 'Identifiant',
-                controller: _identifiantController,
-                errorText: _erreurIdentifiant,
+                label: 'Matricule',
+                controller: _matriculeControleur,
               ),
               const SizedBox(height: AppSpacing.md),
               AppTextField(
                 label: 'Mot de passe',
-                controller: _motDePasseController,
-                obscureText: !_motDePasseVisible,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _motDePasseVisible ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
-                    color: AppColors.grisMoyen,
-                  ),
-                  onPressed: () => setState(() => _motDePasseVisible = !_motDePasseVisible),
-                ),
+                controller: _motDePasseControleur,
+                obscureText: true,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    'Mot de passe oublié ?',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.orFonce, fontWeight: FontWeight.w600),
-                  ),
+              if (_erreur != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _erreur!,
+                  style: AppTypography.libelle.copyWith(color: AppColors.erreur),
                 ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Se connecter',
+                isLoading: _enChargement,
+                onPressed: _seConnecter,
               ),
-              const SizedBox(height: AppSpacing.md),
-
-              AppButton(label: 'Se connecter', onPressed: _seConnecter, isLoading: _chargement),
-              const SizedBox(height: AppSpacing.md),
-
+              const SizedBox(height: AppSpacing.lg),
               Center(
-                child: TextButton(
-                  onPressed: () => context.go('/activation'),
-                  child: Text(
-                    'Activer mon compte',
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.orFonce, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.xl),
-              const Divider(),
-              const SizedBox(height: AppSpacing.md),
-
-              // Explication d'obtention de compte, ajoutée en bas de l'écran
-              // de connexion à la demande de l'encadrant.
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.grisClair,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Symbols.info_rounded, color: AppColors.marine, size: 18),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Vous n\'avez pas encore de compte ?',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.texteFPrincipal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Si vous êtes inscrit à l\'IPEA, rendez-vous au secrétariat avec votre '
-                      'matricule étudiant et votre adresse e-mail. Un code à 4 chiffres vous '
-                      'sera remis pour activer votre compte.',
-                      style: AppTypography.bodySmall,
+                      "Vous n'avez pas encore de compte ?",
+                      style: AppTypography.libelle,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "Rendez-vous au secrétariat de l'IPEA avec votre "
+                      "matricule pour activer votre accès à l'application.",
+                      textAlign: TextAlign.center,
+                      style: AppTypography.libelle,
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/activation'),
+                      child: const Text("J'ai déjà un matricule, activer mon compte"),
                     ),
                   ],
                 ),

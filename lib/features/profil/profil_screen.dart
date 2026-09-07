@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/theme/app_spacing.dart';
+
 import '../../core/auth/auth_state.dart';
-import '../../shared/widgets/app_card.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../shared/widgets/app_button.dart';
+import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/app_text_field.dart';
-import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
+import '../../shared/widgets/loading_skeleton.dart';
 import '../connexion/data/auth_repository.dart';
 import 'data/profil_models.dart';
 import 'data/profil_repository.dart';
 
+/// Onglet "Profil" : reprend le design original (avatar à initiales,
+/// mode édition via l'icône crayon, changement de mot de passe dans une
+/// feuille modale, déconnexion avec confirmation), adapté à la vraie API :
+/// pas de champ email, et le changement de mot de passe ne demande plus
+/// l'ancien mot de passe (mais exige l'identifiant de l'étudiant).
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
 
@@ -31,8 +37,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
   bool _modeEdition = false;
   bool _enregistrementEnCours = false;
 
-  // Seul le téléphone est modifiable par l'étudiant — l'email est
-  // en lecture seule (restriction demandée par l'encadrant).
   final _telephoneController = TextEditingController();
 
   @override
@@ -73,12 +77,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _enregistrer() async {
     setState(() => _enregistrementEnCours = true);
 
-    // L'email n'est jamais envoyé en mise à jour — seul le téléphone
-    // peut être modifié par l'étudiant.
-    await _repository.mettreAJourProfil(
-      email: _profil!.email,
-      telephone: _telephoneController.text,
-    );
+    await _repository.mettreAJourProfil(telephone: _telephoneController.text);
 
     if (!mounted) return;
     setState(() {
@@ -88,7 +87,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil mis à jour avec succès.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profil mis à jour avec succès.')),
+    );
   }
 
   Future<void> _seDeconnecter() async {
@@ -98,7 +99,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
         title: const Text('Déconnexion'),
         content: const Text('Voulez-vous vraiment vous déconnecter ?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text('Déconnexion', style: TextStyle(color: AppColors.erreur)),
@@ -115,6 +119,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
   }
 
   void _ouvrirChangementMotDePasse() {
+    if (_profil == null) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -122,7 +127,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLarge)),
       ),
-      builder: (context) => _FormulaireChangementMotDePasse(repository: _repository),
+      builder: (context) => _FormulaireChangementMotDePasse(
+        repository: _repository,
+        etudiantId: _profil!.id,
+      ),
     );
   }
 
@@ -134,7 +142,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
         title: const Text('Mon profil'),
         actions: [
           if (!_enChargement && !_enErreur && !_modeEdition)
-            IconButton(icon: const Icon(Symbols.edit_rounded), onPressed: () => setState(() => _modeEdition = true)),
+            IconButton(
+              icon: const Icon(Symbols.edit_rounded),
+              onPressed: () => setState(() => _modeEdition = true),
+            ),
         ],
       ),
       body: _construireContenu(),
@@ -147,7 +158,10 @@ class _ProfilScreenState extends State<ProfilScreen> {
     if (_enChargement) {
       return const Padding(
         padding: EdgeInsets.all(AppSpacing.md),
-        child: LoadingSkeleton(height: 260, borderRadius: BorderRadius.all(Radius.circular(12))),
+        child: LoadingSkeleton(
+          height: 260,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
       );
     }
 
@@ -159,14 +173,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
         Center(
           child: Column(
             children: [
-              // Photo de profil : l'étudiant ne peut ni l'ajouter ni la
-              // modifier — seule l'administration en a la possibilité.
-              // Pas d'icône d'édition superposée sur cet avatar.
+              // Avatar à initiales : l'étudiant ne peut ni ajouter ni
+              // modifier de photo — seule l'administration en a la
+              // possibilité (règle métier confirmée). Pas d'icône
+              // d'édition superposée sur cet avatar.
               CircleAvatar(
                 radius: 40,
                 backgroundColor: AppColors.marine,
                 child: Text(
-                  profil.nomComplet.split(' ').map((m) => m[0]).take(2).join(),
+                  profil.nomComplet.trim().split(' ').where((m) => m.isNotEmpty).map((m) => m[0]).take(2).join(),
                   style: AppTypography.h1.copyWith(color: AppColors.blanc),
                 ),
               ),
@@ -183,20 +198,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Email affiché mais non modifiable, même en mode édition
-                    Row(
-                      children: [
-                        Expanded(child: _ligneInfo(Symbols.mail_rounded, 'Email', profil.email)),
-                        Tooltip(
-                          message: 'L\'email ne peut pas être modifié',
-                          child: Icon(Symbols.lock_rounded, size: 16, color: AppColors.grisMoyen),
-                        ),
-                      ],
+                    AppTextField(
+                      label: 'Téléphone',
+                      controller: _telephoneController,
+                      keyboardType: TextInputType.phone,
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppTextField(label: 'Téléphone', controller: _telephoneController, keyboardType: TextInputType.phone),
                     const SizedBox(height: AppSpacing.lg),
-                    AppButton(label: 'Enregistrer', onPressed: _enregistrer, isLoading: _enregistrementEnCours),
+                    AppButton(
+                      label: 'Enregistrer',
+                      onPressed: _enregistrer,
+                      isLoading: _enregistrementEnCours,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     AppButton(
                       label: 'Annuler',
@@ -212,13 +224,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     ),
                   ],
                 )
-              : Column(
-                  children: [
-                    _ligneInfo(Symbols.mail_rounded, 'Email', profil.email),
-                    const Divider(height: AppSpacing.lg),
-                    _ligneInfo(Symbols.call_rounded, 'Téléphone', profil.telephone),
-                  ],
-                ),
+              : _ligneInfo(Symbols.call_rounded, 'Téléphone', profil.telephone),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -266,15 +272,21 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
 class _FormulaireChangementMotDePasse extends StatefulWidget {
   final ProfilRepository repository;
+  final String etudiantId;
 
-  const _FormulaireChangementMotDePasse({required this.repository});
+  const _FormulaireChangementMotDePasse({
+    required this.repository,
+    required this.etudiantId,
+  });
 
   @override
   State<_FormulaireChangementMotDePasse> createState() => _FormulaireChangementMotDePasseState();
 }
 
 class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMotDePasse> {
-  final _actuelController = TextEditingController();
+  // Pas de champ "mot de passe actuel" : la vraie API (PUT /password)
+  // n'en demande pas — seuls le nouveau mot de passe, sa confirmation,
+  // et l'identifiant de l'étudiant sont exigés.
   final _nouveauController = TextEditingController();
   final _confirmationController = TextEditingController();
   bool _chargement = false;
@@ -284,7 +296,6 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
 
   @override
   void dispose() {
-    _actuelController.dispose();
     _nouveauController.dispose();
     _confirmationController.dispose();
     super.dispose();
@@ -303,16 +314,19 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
 
     try {
       await widget.repository.changerMotDePasse(
-        motDePasseActuel: _actuelController.text,
+        etudiantId: widget.etudiantId,
         nouveauMotDePasse: _nouveauController.text,
+        confirmation: _confirmationController.text,
       );
 
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mot de passe modifié avec succès.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mot de passe modifié avec succès.')),
+      );
     } catch (_) {
       if (!mounted) return;
-      setState(() => _erreurGenerale = 'Mot de passe actuel incorrect.');
+      setState(() => _erreurGenerale = "Une erreur est survenue. Réessayez.");
     } finally {
       if (mounted) setState(() => _chargement = false);
     }
@@ -337,8 +351,6 @@ class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMo
             Text(_erreurGenerale!, style: AppTypography.bodySmall.copyWith(color: AppColors.erreur)),
             const SizedBox(height: AppSpacing.sm),
           ],
-          AppTextField(label: 'Mot de passe actuel', controller: _actuelController, obscureText: true),
-          const SizedBox(height: AppSpacing.md),
           AppTextField(
             label: 'Nouveau mot de passe',
             controller: _nouveauController,

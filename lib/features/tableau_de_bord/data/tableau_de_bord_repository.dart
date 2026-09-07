@@ -3,11 +3,6 @@ import '../../paiements/data/paiements_repository.dart';
 import '../../profil/data/profil_repository.dart';
 import 'tableau_de_bord_models.dart';
 
-/// Compose les données du tableau de bord depuis trois sources
-/// distinctes (aucun endpoint dédié dans la note de cadrage) :
-/// - GET /profile (nom de l'étudiant)
-/// - GET /scolarites (classe et semestre actuels, moyenne)
-/// - GET /paiements (reste à payer)
 class TableauDeBordRepository {
   final _scolariteRepository = ScolariteRepository();
   final _paiementsRepository = PaiementsRepository();
@@ -16,14 +11,20 @@ class TableauDeBordRepository {
   Future<TableauDeBordData> obtenirDonnees() async {
     final profil = await _profilRepository.obtenirProfil();
     final situation = await _paiementsRepository.obtenirSituation();
-    final actuel = await _scolariteRepository.obtenirClasseEtSemestreActuels();
+    final inscription = await _scolariteRepository.obtenirInscriptionActuelle();
+
+    double moyenne = 0;
+    if (inscription != null) {
+      final modules = await _scolariteRepository.obtenirModules(inscription.id);
+      moyenne = _scolariteRepository.calculerMoyenne(modules);
+    }
 
     return TableauDeBordData(
       nomEtudiant: profil.nomComplet,
-      moyenneGenerale: actuel?.$2.moyenne ?? 0,
+      moyenneGenerale: moyenne,
       resteAPayer: situation.resteAPayer,
-      scolariteNom: actuel != null ? '${actuel.$1.nom} — ${actuel.$2.nom}' : '—',
-      scolariteAnnee: '', // Non pertinent avec la nouvelle structure Classe/Semestre
+      scolariteNom: inscription?.libelle ?? '—',
+      scolariteAnnee: '',
       scolariteStatut: 'En cours',
     );
   }

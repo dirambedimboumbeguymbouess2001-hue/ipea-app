@@ -1,75 +1,64 @@
 import '../../../core/network/api_client.dart';
 import 'scolarite_models.dart';
 
-/// Structure Classe > Semestre > Modules — nouvelle forme de réponse,
-/// pas encore implémentée côté serveur. Reste en simulation
-/// (ApiFlags.scolarite) tant que l'encadrant n'a pas codé cette
-/// nouvelle version de l'endpoint /scolarites — voir
-/// SPECIFICATION_API_V2.md pour le contrat attendu exact.
 class ScolariteRepository {
-  Future<List<Classe>> obtenirClasses() async {
+  /// Retourne la liste des inscriptions de l'étudiant, la plus récente en
+  /// premier n'est PAS garantie ici : c'est l'écran (scolarites_screen.dart)
+  /// qui applique `.reversed` pour l'affichage.
+  Future<List<Inscription>> obtenirInscriptions() async {
     if (!ApiFlags.scolarite) {
-      await Future.delayed(const Duration(seconds: 1));
+      // --- SIMULATION TEMPORAIRE ---
+      await Future.delayed(const Duration(milliseconds: 800));
       return const [
-        Classe(
-          id: 'l1',
-          nom: 'Licence 1',
-          semestres: [
-            Semestre(
-              id: 'l1-s1',
-              nom: 'Semestre 1',
-              modules: [
-                Module(nom: 'Mathématiques', note: 14, credits: 5),
-                Module(nom: 'Algorithmique', note: 15, credits: 5),
-                Module(nom: 'Anglais', note: 12, credits: 3),
-              ],
-            ),
-            Semestre(
-              id: 'l1-s2',
-              nom: 'Semestre 2',
-              modules: [
-                Module(nom: 'Bases de données', note: 13, credits: 5),
-                Module(nom: 'Réseaux', note: 11, credits: 4),
-                Module(nom: 'Anglais', note: 14, credits: 3),
-              ],
-            ),
-          ],
-        ),
-        Classe(
-          id: 'l2',
-          nom: 'Licence 2',
-          semestres: [
-            Semestre(
-              id: 'l2-s1',
-              nom: 'Semestre 1',
-              modules: [
-                Module(nom: 'Module 1', note: 15, credits: 5),
-                Module(nom: 'Module 2', note: 13, credits: 4),
-                Module(nom: 'Module 3', note: 16, credits: 3),
-              ],
-            ),
-            Semestre(
-              id: 'l2-s2',
-              nom: 'Semestre 2',
-              modules: [
-                Module(nom: 'Programmation Flutter', note: 17, credits: 6),
-                Module(nom: 'Anglais', note: 12, credits: 3),
-              ],
-            ),
-          ],
-        ),
+        Inscription(id: '1', idClasse: '2', libelle: 'Terminale D', code: 'TLE-D'),
+        Inscription(id: '2', idClasse: '8', libelle: 'L1 Informatique', code: 'L1-INFO'),
+        Inscription(id: '3', idClasse: '12', libelle: 'L2 Informatique', code: 'L2-INFO'),
       ];
     }
-
     final reponse = await ApiClient.instance.dio.get('/scolarites');
-    return (reponse.data as List).map((j) => Classe.fromJson(j)).toList();
+    final liste = reponse.data['data'] as List;
+    return liste
+        .map((e) => Inscription.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<(Classe, Semestre)?> obtenirClasseEtSemestreActuels() async {
-    final classes = await obtenirClasses();
-    if (classes.isEmpty) return null;
-    final classeActuelle = classes.last;
-    if (classeActuelle.semestres.isEmpty) return null;
-    return (classeActuelle, classeActuelle.semestres.last);
+  /// L'inscription "en cours" utilisée sur le tableau de bord : par
+  /// convention la dernière de la liste (la plus récente).
+  Future<Inscription?> obtenirInscriptionActuelle() async {
+    final inscriptions = await obtenirInscriptions();
+    if (inscriptions.isEmpty) return null;
+    return inscriptions.last;
+  }
+
+  /// Modules (notes) d'une inscription donnée.
+  /// Reste TOUJOURS simulé : la forme réelle de GET /notes/{inscription}
+  /// n'est pas documentée dans le fichier OpenAPI fourni (Scramble n'a pas
+  /// pu l'analyser). Ne pas activer de flag ici tant qu'on n'a pas
+  /// d'exemple JSON concret de l'encadrant.
+  Future<List<Module>> obtenirModules(String inscriptionId) async {
+    // --- SIMULATION TEMPORAIRE ---
+    await Future.delayed(const Duration(milliseconds: 800));
+    return const [
+      Module(nom: 'Algorithmique avancée', note: 15.5, credits: 6),
+      Module(nom: 'Bases de données', note: 13.0, credits: 5),
+      Module(nom: 'Réseaux', note: 11.5, credits: 4),
+      Module(nom: 'Anglais technique', note: 16.0, credits: 3),
+    ];
+  }
+
+  /// Moyenne pondérée par les crédits.
+  double calculerMoyenne(List<Module> modules) {
+    if (modules.isEmpty) return 0;
+    final totalPondere = modules.fold<double>(
+      0,
+      (somme, module) => somme + module.note * module.credits,
+    );
+    final totalCredits = calculerTotalCredits(modules);
+    if (totalCredits == 0) return 0;
+    return totalPondere / totalCredits;
+  }
+
+  int calculerTotalCredits(List<Module> modules) {
+    return modules.fold<int>(0, (somme, module) => somme + module.credits);
   }
 }

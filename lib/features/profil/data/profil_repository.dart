@@ -1,61 +1,57 @@
 import '../../../core/network/api_client.dart';
 import 'profil_models.dart';
 
-/// Endpoints : GET /profile, PUT /profile, PUT /password (Sanctum).
-/// Structure inchangée — prête à passer en réel dès validation de
-/// l'encadrant (ApiFlags.profil). IMPORTANT : PUT /profile n'envoie
-/// désormais plus jamais l'email (restriction demandée par
-/// l'encadrant — l'étudiant ne peut plus le modifier). Le serveur
-/// doit lui aussi refuser toute tentative de modification de l'email
-/// par ce endpoint, même si un client malveillant tentait de l'envoyer.
 class ProfilRepository {
-  ProfilEtudiant? _profilEnCache;
-
+  /// Récupère le profil de l'étudiant connecté.
   Future<ProfilEtudiant> obtenirProfil() async {
     if (!ApiFlags.profil) {
-      await Future.delayed(const Duration(seconds: 1));
-      _profilEnCache ??= const ProfilEtudiant(
-        nomComplet: 'Guy Dirambe Di Mboumbe',
-        email: 'guy.dirambe@ipea-etu.ga',
+      // --- SIMULATION TEMPORAIRE ---
+      await Future.delayed(const Duration(milliseconds: 800));
+      return const ProfilEtudiant(
+        id: '1',
+        matricule: 'IPEA-2024-0157',
+        nom: 'Mbouess',
+        prenom: 'Guy',
         telephone: '074 12 34 56',
-        matricule: 'IPEA-L2-2026-0142',
+        photo: null,
       );
-      return _profilEnCache!;
     }
-
     final reponse = await ApiClient.instance.dio.get('/profile');
-    return ProfilEtudiant.fromJson(reponse.data);
+    return ProfilEtudiant.fromJson(reponse.data['data'] as Map<String, dynamic>);
   }
 
-  /// Seul le téléphone est modifiable par l'étudiant — voir
-  /// SPECIFICATION_API_V2.md, section Profil, pour la restriction
-  /// exacte attendue côté serveur.
-  Future<void> mettreAJourProfil({required String email, required String telephone}) async {
+  /// Met à jour le profil. Seul le téléphone est modifiable par l'étudiant :
+  /// - l'email n'existe pas dans l'API (rien à envoyer)
+  /// - la photo est techniquement acceptée par l'API mais réservée à
+  ///   l'admin : on ne l'envoie donc jamais depuis cette méthode.
+  Future<void> mettreAJourProfil({required String telephone}) async {
     if (!ApiFlags.profil) {
+      // --- SIMULATION TEMPORAIRE ---
       await Future.delayed(const Duration(milliseconds: 800));
-      if (_profilEnCache != null) {
-        _profilEnCache = _profilEnCache!.copyWith(telephone: telephone);
-      }
       return;
     }
-
     await ApiClient.instance.dio.put('/profile', data: {
       'telephone': telephone,
     });
   }
 
+  /// Change le mot de passe. Pas de vérification de l'ancien mot de passe
+  /// côté API (contrairement à ce qu'on avait supposé au départ) — mais
+  /// `etudiant_id` est obligatoire dans le corps de la requête.
   Future<void> changerMotDePasse({
-    required String motDePasseActuel,
+    required String etudiantId,
     required String nouveauMotDePasse,
+    required String confirmation,
   }) async {
     if (!ApiFlags.profil) {
-      await Future.delayed(const Duration(seconds: 1));
+      // --- SIMULATION TEMPORAIRE ---
+      await Future.delayed(const Duration(milliseconds: 800));
       return;
     }
-
     await ApiClient.instance.dio.put('/password', data: {
-      'mot_de_passe_actuel': motDePasseActuel,
-      'nouveau_mot_de_passe': nouveauMotDePasse,
+      'etudiant_id': etudiantId,
+      'password': nouveauMotDePasse,
+      'confirm': confirmation,
     });
   }
 }

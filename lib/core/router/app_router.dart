@@ -5,17 +5,21 @@ import '../../features/connexion/connexion_screen.dart';
 import '../../features/activation/activation_screen.dart';
 import '../../features/tableau_de_bord/tableau_de_bord_screen.dart';
 import '../../features/scolarites/scolarites_screen.dart';
-import '../../features/scolarites/semestre_detail_screen.dart';
+import '../../features/scolarites/inscription_detail_screen.dart';
 import '../../features/paiements/paiements_screen.dart';
 import '../../features/profil/profil_screen.dart';
 import 'main_shell.dart';
 
 /// Routeur centralisé de l'application, avec garde de route.
 ///
-/// L'écran Notes a été fusionné dans Scolarité (accordéon Classe >
-/// Semestre > Modules) — la route /notes et l'onglet correspondant
-/// n'existent plus. L'accès aux enseignants a également été retiré
-/// à la demande de l'encadrant.
+/// L'écran Notes a été fusionné dans Scolarité — la route /notes et
+/// l'onglet correspondant n'existent plus. L'accès aux enseignants a
+/// également été retiré à la demande de l'encadrant.
+///
+/// La vraie API renvoie une liste PLATE de scolarités (pas de semestres
+/// imbriqués) : la route imbriquée est donc passée de
+/// /scolarites/:classeId/:semestreId (3 niveaux) à /scolarites/:id
+/// (2 niveaux : Inscription -> Modules).
 class AppRouter {
   AppRouter._();
 
@@ -77,13 +81,12 @@ class AppRouter {
                   path: '/scolarites',
                   builder: (context, state) => const ScolaritesScreen(),
                   routes: [
-                    // Route imbriquée : /scolarites/:classeId/:semestreId
+                    // Route imbriquée : /scolarites/:id
                     GoRoute(
-                      path: ':classeId/:semestreId',
+                      path: ':id',
                       builder: (context, state) {
-                        final classeId = state.pathParameters['classeId']!;
-                        final semestreId = state.pathParameters['semestreId']!;
-                        return SemestreDetailScreen(classeId: classeId, semestreId: semestreId);
+                        final id = state.pathParameters['id']!;
+                        return InscriptionDetailScreen(inscriptionId: id);
                       },
                     ),
                   ],

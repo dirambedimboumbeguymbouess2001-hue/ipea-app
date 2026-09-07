@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
@@ -8,6 +7,14 @@ import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../connexion/data/auth_repository.dart';
 
+/// Écran d'activation, adapté à la vraie API : POST /mobile/active
+/// n'attend officiellement qu'un `matricule`.
+///
+/// Le champ Email a été ajouté par anticipation d'une évolution encore
+/// non confirmée par l'encadrant (voir QUESTIONS_API.md, point 2) : à
+/// terme, le mot de passe généré serait envoyé à la fois par SMS (canal
+/// réel, basé sur le téléphone déjà en base) et par email (canal proposé,
+/// à faire ajouter côté backend).
 class ActivationScreen extends StatefulWidget {
   const ActivationScreen({super.key});
 
@@ -18,64 +25,54 @@ class ActivationScreen extends StatefulWidget {
 class _ActivationScreenState extends State<ActivationScreen> {
   final _repository = AuthRepository();
   final _matriculeController = TextEditingController();
-  final _codeController = TextEditingController();
-  final _motDePasseController = TextEditingController();
-  final _confirmationController = TextEditingController();
+  final _emailController = TextEditingController();
 
-  bool _motDePasseVisible = false;
   bool _chargement = false;
-
   String? _erreurMatricule;
-  String? _erreurCode;
-  String? _erreurMotDePasse;
-  String? _erreurConfirmation;
+  String? _erreurEmail;
   String? _erreurGenerale;
 
   @override
   void dispose() {
     _matriculeController.dispose();
-    _codeController.dispose();
-    _motDePasseController.dispose();
-    _confirmationController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
-  bool _validerFormulaire() {
-    setState(() {
-      _erreurMatricule = _matriculeController.text.trim().isEmpty ? 'Matricule requis' : null;
-      _erreurCode = _codeController.text.trim().isEmpty ? 'Code d\'activation requis' : null;
-      _erreurMotDePasse = _motDePasseController.text.length < 6 ? 'Au moins 6 caractères' : null;
-      _erreurConfirmation =
-          _confirmationController.text != _motDePasseController.text ? 'Les mots de passe ne correspondent pas' : null;
-    });
-
-    return _erreurMatricule == null &&
-        _erreurCode == null &&
-        _erreurMotDePasse == null &&
-        _erreurConfirmation == null;
+  bool _emailValide(String valeur) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(valeur);
   }
 
   Future<void> _activerCompte() async {
-    setState(() => _erreurGenerale = null);
-    if (!_validerFormulaire()) return;
+    setState(() {
+      _erreurMatricule = _matriculeController.text.trim().isEmpty ? 'Matricule requis' : null;
+      _erreurEmail = !_emailValide(_emailController.text.trim()) ? 'Email invalide' : null;
+      _erreurGenerale = null;
+    });
+
+    if (_erreurMatricule != null || _erreurEmail != null) return;
 
     setState(() => _chargement = true);
 
     try {
       await _repository.activerCompte(
         matricule: _matriculeController.text.trim(),
-        code: _codeController.text.trim(),
-        nouveauMotDePasse: _motDePasseController.text,
+        email: _emailController.text.trim(),
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Compte activé avec succès. Vous pouvez vous connecter.')),
+        const SnackBar(
+          content: Text(
+            'Compte activé. Un mot de passe a été envoyé par SMS et par email.',
+          ),
+          duration: Duration(seconds: 5),
+        ),
       );
       context.go('/connexion');
     } catch (_) {
       if (!mounted) return;
-      setState(() => _erreurGenerale = 'Matricule ou code invalide. Vérifiez et réessayez.');
+      setState(() => _erreurGenerale = 'Matricule invalide. Vérifiez et réessayez.');
     } finally {
       if (mounted) setState(() => _chargement = false);
     }
@@ -96,7 +93,8 @@ class _ActivationScreenState extends State<ActivationScreen> {
               Text('Activez votre compte', style: AppTypography.h1, textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Renseignez votre matricule et le code reçu pour créer votre mot de passe',
+                'Renseignez votre matricule et votre email pour recevoir '
+                'votre mot de passe par SMS et par email',
                 style: AppTypography.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -121,31 +119,10 @@ class _ActivationScreenState extends State<ActivationScreen> {
               AppTextField(label: 'Matricule', controller: _matriculeController, errorText: _erreurMatricule),
               const SizedBox(height: AppSpacing.md),
               AppTextField(
-                label: 'Code d\'activation',
-                controller: _codeController,
-                errorText: _erreurCode,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                label: 'Nouveau mot de passe',
-                controller: _motDePasseController,
-                errorText: _erreurMotDePasse,
-                obscureText: !_motDePasseVisible,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _motDePasseVisible ? Symbols.visibility_off_rounded : Symbols.visibility_rounded,
-                    color: AppColors.grisMoyen,
-                  ),
-                  onPressed: () => setState(() => _motDePasseVisible = !_motDePasseVisible),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                label: 'Confirmer le mot de passe',
-                controller: _confirmationController,
-                errorText: _erreurConfirmation,
-                obscureText: !_motDePasseVisible,
+                label: 'Email',
+                controller: _emailController,
+                errorText: _erreurEmail,
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: AppSpacing.xl),
 
