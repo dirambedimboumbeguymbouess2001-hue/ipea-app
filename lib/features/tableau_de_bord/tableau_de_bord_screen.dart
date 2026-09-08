@@ -9,6 +9,7 @@ import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
 import 'data/tableau_de_bord_models.dart';
 import 'data/tableau_de_bord_repository.dart';
+import '../scolarites/data/scolarite_models.dart';
 
 class TableauDeBordScreen extends StatefulWidget {
   const TableauDeBordScreen({super.key});
@@ -91,50 +92,54 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
             Expanded(
               child: Text('Bonjour, ${donnees.prenomEtudiant}', style: AppTypography.h2),
             ),
-            if (donnees.boursier)
-              Tooltip(
-                message: 'Étudiant boursier',
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: AppColors.or, shape: BoxShape.circle),
-                  child: const Icon(Symbols.workspace_premium_rounded, size: 18, color: AppColors.marine),
+            Tooltip(
+              message: donnees.boursier ? 'Étudiant boursier' : 'Étudiant non boursier',
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: donnees.boursier ? AppColors.or : AppColors.grisMoyen,
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(Symbols.workspace_premium_rounded, size: 18, color: AppColors.marine),
               ),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Cartes statistiques — moyenne (simulée, voir QUESTIONS_API.md
-        // point 3) et reste à payer (simulé, voir point 4)
-        Row(
-          children: [
-            Expanded(
-              child: AppCard(
-                backgroundColor: AppColors.succes.withValues(alpha: 0.08),
+        // Carte scolarité/paiement — s'adapte si l'étudiant est boursier
+        // (voir la règle dans tableau_de_bord_repository.dart)
+        AppCard(
+          backgroundColor: donnees.boursier ? AppColors.succes.withValues(alpha: 0.08) : null,
+          child: Row(
+            children: [
+              Icon(
+                donnees.boursier ? Symbols.check_circle_rounded : Symbols.payments_rounded,
+                color: donnees.boursier ? AppColors.succes : AppColors.marine,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Moyenne', style: AppTypography.bodySmall.copyWith(color: AppColors.succes)),
+                    Text(
+                      donnees.boursier ? 'Scolarité prise en charge' : 'Reste à payer',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: donnees.boursier ? AppColors.succes : null,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(donnees.moyenneGenerale.toStringAsFixed(2), style: AppTypography.h2.copyWith(color: AppColors.succes)),
+                    Text(
+                      donnees.boursier ? 'Bourse IPEA' : '${donnees.resteAPayer} FCFA',
+                      style: AppTypography.h3.copyWith(
+                        color: donnees.boursier ? AppColors.succes : null,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Reste à payer', style: AppTypography.bodySmall),
-                    const SizedBox(height: 4),
-                    Text('${donnees.resteAPayer} FCFA', style: AppTypography.h3),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -143,7 +148,15 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
         AppCard(
           onTap: donnees.scolariteId == null
               ? null
-              : () => context.push('/scolarites/${donnees.scolariteId}'),
+              : () => context.push(
+                    '/scolarites/${donnees.scolariteId}',
+                    extra: Inscription(
+                      id: donnees.scolariteId!,
+                      idClasse: '',
+                      libelle: donnees.scolariteNom,
+                      code: donnees.scolariteCode,
+                    ),
+                  ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

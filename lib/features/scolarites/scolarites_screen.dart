@@ -79,7 +79,7 @@ class _ScolaritesScreenState extends State<ScolaritesScreen> {
               itemBuilder: (context, index) {
                 final inscription = tri[index];
                 return AppCard(
-                  onTap: () => context.push('/scolarites/${inscription.id}'),
+                  onTap: () => context.push('/scolarites/${inscription.id}', extra: inscription),
                   child: Row(
                     children: [
                       const Icon(Symbols.menu_book_rounded, color: AppColors.orFonce),

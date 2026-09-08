@@ -13,17 +13,17 @@ class TableauDeBordRepository {
     final situation = await _paiementsRepository.obtenirSituation();
     final inscription = await _scolariteRepository.obtenirInscriptionActuelle();
 
-    double moyenne = 0;
-    if (inscription != null) {
-      final modules = await _scolariteRepository.obtenirModules(inscription.id);
-      moyenne = _scolariteRepository.calculerMoyenne(modules);
-    }
+    // Règle métier demandée : un étudiant boursier a sa scolarité prise
+    // en charge automatiquement, donc pas de reste à payer affiché.
+    // ⚠️ HYPOTHÈSE NON CONFIRMÉE PAR L'API - voir QUESTIONS_API.md,
+    // point 7. Une vraie bourse partielle pourrait laisser un reste à
+    // charge ; à valider avec l'encadrant avant le vrai branchement.
+    final resteAPayer = profil.boursier ? 0 : situation.resteAPayer;
 
     return TableauDeBordData(
       prenomEtudiant: profil.prenom,
       boursier: profil.boursier,
-      moyenneGenerale: moyenne,
-      resteAPayer: situation.resteAPayer,
+      resteAPayer: resteAPayer,
       scolariteId: inscription?.id,
       scolariteNom: inscription?.libelle ?? 'Aucune inscription',
       scolariteCode: inscription?.code ?? '',

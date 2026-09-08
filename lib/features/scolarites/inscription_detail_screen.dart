@@ -10,17 +10,26 @@ import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/loading_skeleton.dart';
 import 'data/scolarite_models.dart';
 import 'data/scolarite_repository.dart';
+import 'semestre_modules_screen.dart';
 
-/// Écran affichant le détail d'une inscription : la liste de ses modules
-/// (nom, note, crédits) ainsi que la moyenne et le total de crédits.
+/// Écran affichant le détail d'une inscription : une liste de semestres
+/// cliquables (règle IPEA : L1 -> S1/S2, L2 -> S3/S4, L3 -> S5/S6), avec
+/// un résumé (moyenne, crédits) par semestre. Taper un semestre ouvre le
+/// détail de ses modules (voir semestre_modules_screen.dart).
 ///
-/// Remplace l'ancien `semestre_detail_screen.dart` : ici il n'y a plus de
-/// niveau "classe" en préfixe du titre, uniquement le libellé de
-/// l'inscription elle-même (structure de tableau identique à l'ancien écran).
+/// [inscription] est optionnelle : si elle est fournie (transmise par
+/// l'écran appelant via `extra`), on évite un appel réseau superflu pour
+/// connaître son code. Si absente (ex. accès direct à l'URL), l'écran la
+/// retrouve lui-même via la liste des inscriptions.
 class InscriptionDetailScreen extends StatefulWidget {
-  const InscriptionDetailScreen({super.key, required this.inscriptionId});
+  const InscriptionDetailScreen({
+    super.key,
+    required this.inscriptionId,
+    this.inscription,
+  });
 
   final String inscriptionId;
+  final Inscription? inscription;
 
   @override
   State<InscriptionDetailScreen> createState() =>
@@ -30,17 +39,38 @@ class InscriptionDetailScreen extends StatefulWidget {
 class _InscriptionDetailScreenState extends State<InscriptionDetailScreen> {
   final ScolariteRepository _repository = ScolariteRepository();
 
-  late Future<List<Module>> _futureModules;
+  late Future<(Inscription, List<Module>)> _futureDonnees;
 
   @override
   void initState() {
     super.initState();
-    _futureModules = _repository.obtenirModules(widget.inscriptionId);
+    _futureDonnees = _charger();
+  }
+
+  Future<(Inscription, List<Module>)> _charger() async {
+    var inscription = widget.inscription;
+
+    if (inscription == null) {
+      final inscriptions = await _repository.obtenirInscriptions();
+      inscription = inscriptions.firstWhere(
+        (i) => i.id == widget.inscriptionId,
+        orElse: () => throw Exception('Inscription introuvable'),
+      );
+    }
+
+    final (premier, second) = _repository.semestresPourNiveau(inscription.code);
+    final modules = await _repository.obtenirModules(
+      widget.inscriptionId,
+      premierSemestre: premier,
+      deuxiemeSemestre: second,
+    );
+
+    return (inscription, modules);
   }
 
   Future<void> _recharger() async {
     setState(() {
-      _futureModules = _repository.obtenirModules(widget.inscriptionId);
+      _futureDonnees = _charger();
     });
   }
 
@@ -51,8 +81,8 @@ class _InscriptionDetailScreenState extends State<InscriptionDetailScreen> {
       appBar: AppBar(
         title: const Text('Notes'),
       ),
-      body: FutureBuilder<List<Module>>(
-        future: _futureModules,
+      body: FutureBuilder<(Inscription, List<Module>)>(
+        future: _futureDonnees,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingSkeleton();
@@ -65,7 +95,7 @@ class _InscriptionDetailScreenState extends State<InscriptionDetailScreen> {
             );
           }
 
-          final modules = snapshot.data ?? const <Module>[];
+          final (inscription, modules) = snapshot.data!;
 
           if (modules.isEmpty) {
             return const EmptyState(
@@ -74,42 +104,37 @@ class _InscriptionDetailScreenState extends State<InscriptionDetailScreen> {
             );
           }
 
-          final moyenne = _repository.calculerMoyenne(modules);
-          final totalCredits = _repository.calculerTotalCredits(modules);
+          final semestres = modules.map((m) => m.semestre).toSet().toList()..sort();
+          final moyenneGenerale = _repository.calculerMoyenne(modules);
+          final totalCreditsGeneral = _repository.calculerTotalCredits(modules);
 
           return RefreshIndicator(
             onRefresh: _recharger,
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _enTeteTableau(),
-                      const Divider(height: AppSpacing.lg),
-                      for (final module in modules) ...[
-                        _ligneModule(module),
-                        const Divider(height: AppSpacing.md),
-                      ],
-                    ],
+                Text(inscription.libelle, style: AppTypography.h2),
+                Text(inscription.code, style: AppTypography.libelle),
+                const SizedBox(height: AppSpacing.lg),
+
+                for (final semestre in semestres) ...[
+                  _carteSemestre(
+                    context,
+                    inscription,
+                    semestre,
+                    modules.where((m) => m.semestre == semestre).toList(),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
                 const SizedBox(height: AppSpacing.md),
+
                 AppCard(
+                  backgroundColor: AppColors.marineTresClair,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _resume(
-                        'Moyenne',
-                        moyenne.toStringAsFixed(2),
-                        Symbols.emoji_events_rounded,
-                      ),
-                      _resume(
-                        'Total crédits',
-                        totalCredits.toString(),
-                        Symbols.stacks_rounded,
-                      ),
+                      _resume('Moyenne générale', moyenneGenerale.toStringAsFixed(2), Symbols.emoji_events_rounded),
+                      _resume('Total crédits', totalCreditsGeneral.toString(), Symbols.stacks_rounded),
                     ],
                   ),
                 ),
@@ -122,44 +147,41 @@ class _InscriptionDetailScreenState extends State<InscriptionDetailScreen> {
     );
   }
 
-  Widget _enTeteTableau() {
-    final style = AppTypography.libelle.copyWith(fontWeight: FontWeight.w600);
-    return Row(
-      children: [
-        Expanded(flex: 3, child: Text('Module', style: style)),
-        Expanded(
-          child: Text('Note', textAlign: TextAlign.center, style: style),
-        ),
-        Expanded(
-          child: Text('Crédits', textAlign: TextAlign.center, style: style),
-        ),
-      ],
-    );
-  }
+  Widget _carteSemestre(
+    BuildContext context,
+    Inscription inscription,
+    int semestre,
+    List<Module> modulesDuSemestre,
+  ) {
+    final moyenne = _repository.calculerMoyenne(modulesDuSemestre);
+    final totalCredits = _repository.calculerTotalCredits(modulesDuSemestre);
 
-  Widget _ligneModule(Module module) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    return AppCard(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SemestreModulesScreen(
+              inscription: inscription,
+              semestre: semestre,
+              modules: modulesDuSemestre,
+            ),
+          ),
+        );
+      },
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            flex: 3,
-            child: Text(module.nom, style: AppTypography.bodyLarge),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Semestre $semestre', style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                'Moy. ${moyenne.toStringAsFixed(2)} · $totalCredits crédits · ${modulesDuSemestre.length} modules',
+                style: AppTypography.bodySmall,
+              ),
+            ],
           ),
-          Expanded(
-            child: Text(
-              module.note.toStringAsFixed(2),
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyLarge,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              module.credits.toString(),
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyLarge,
-            ),
-          ),
+          const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
         ],
       ),
     );

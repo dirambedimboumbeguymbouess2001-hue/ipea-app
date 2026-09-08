@@ -6,6 +6,7 @@ import '../../features/activation/activation_screen.dart';
 import '../../features/tableau_de_bord/tableau_de_bord_screen.dart';
 import '../../features/scolarites/scolarites_screen.dart';
 import '../../features/scolarites/inscription_detail_screen.dart';
+import '../../features/scolarites/data/scolarite_models.dart';
 import '../../features/paiements/paiements_screen.dart';
 import '../../features/profil/profil_screen.dart';
 import 'main_shell.dart';
@@ -19,7 +20,8 @@ import 'main_shell.dart';
 /// La vraie API renvoie une liste PLATE de scolarités (pas de semestres
 /// imbriqués) : la route imbriquée est donc passée de
 /// /scolarites/:classeId/:semestreId (3 niveaux) à /scolarites/:id
-/// (2 niveaux : Inscription -> Modules).
+/// (2 niveaux : Inscription -> Modules, ces derniers étant eux-mêmes
+/// regroupés par semestre à l'affichage - voir inscription_detail_screen.dart).
 class AppRouter {
   AppRouter._();
 
@@ -82,11 +84,18 @@ class AppRouter {
                   builder: (context, state) => const ScolaritesScreen(),
                   routes: [
                     // Route imbriquée : /scolarites/:id
+                    // `extra` transporte l'Inscription complète quand
+                    // l'écran appelant l'a déjà en mémoire (évite un
+                    // appel réseau superflu) - reste optionnel.
                     GoRoute(
                       path: ':id',
                       builder: (context, state) {
                         final id = state.pathParameters['id']!;
-                        return InscriptionDetailScreen(inscriptionId: id);
+                        final inscription = state.extra as Inscription?;
+                        return InscriptionDetailScreen(
+                          inscriptionId: id,
+                          inscription: inscription,
+                        );
                       },
                     ),
                   ],

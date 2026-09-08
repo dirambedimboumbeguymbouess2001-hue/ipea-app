@@ -187,27 +187,26 @@ class _ProfilScreenState extends State<ProfilScreen> {
                       style: AppTypography.h1.copyWith(color: AppColors.blanc),
                     ),
                   ),
-                  if (profil.boursier)
-                    Positioned(
-                      bottom: -2,
-                      right: -2,
-                      child: Tooltip(
-                        message: 'Étudiant boursier',
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.or,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.blanc, width: 2),
-                          ),
-                          child: const Icon(
-                            Symbols.workspace_premium_rounded,
-                            size: 16,
-                            color: AppColors.marine,
-                          ),
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Tooltip(
+                      message: profil.boursier ? 'Étudiant boursier' : 'Étudiant non boursier',
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: profil.boursier ? AppColors.or : AppColors.grisMoyen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.blanc, width: 2),
+                        ),
+                        child: const Icon(
+                          Symbols.workspace_premium_rounded,
+                          size: 16,
+                          color: AppColors.marine,
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),

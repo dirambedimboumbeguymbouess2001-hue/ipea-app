@@ -15,10 +15,13 @@ class Annonce {
 /// repositories réels de chaque fonctionnalité (profil, scolarité,
 /// paiements) plutôt que dupliquées ici — une seule source de vérité
 /// par donnée.
+///
+/// Pas de champ "moyenne générale" : retiré volontairement, la donnée
+/// simulée était ambiguë (quel semestre ? quelle année ?) et risquait
+/// d'induire en erreur tant qu'aucun relevé de notes réel n'existe.
 class TableauDeBordData {
   final String prenomEtudiant;
   final bool boursier;
-  final double moyenneGenerale;
   final int resteAPayer;
   final String? scolariteId;
   final String scolariteNom;
@@ -28,7 +31,6 @@ class TableauDeBordData {
   const TableauDeBordData({
     required this.prenomEtudiant,
     required this.boursier,
-    required this.moyenneGenerale,
     required this.resteAPayer,
     required this.scolariteId,
     required this.scolariteNom,
