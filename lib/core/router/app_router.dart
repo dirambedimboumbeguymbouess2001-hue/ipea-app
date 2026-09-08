@@ -9,6 +9,7 @@ import '../../features/scolarites/inscription_detail_screen.dart';
 import '../../features/scolarites/data/scolarite_models.dart';
 import '../../features/paiements/paiements_screen.dart';
 import '../../features/profil/profil_screen.dart';
+import '../../features/administration/administration_connexion_screen.dart';
 import 'main_shell.dart';
 
 /// Routeur centralisé de l'application, avec garde de route.
@@ -30,6 +31,11 @@ class AppRouter {
       initialLocation: '/',
       refreshListenable: authState,
       redirect: (context, state) {
+        // L'espace administration a sa PROPRE connexion (staff, pas
+        // étudiant) - il ne doit jamais passer par la garde de route
+        // étudiante ci-dessous.
+        if (state.matchedLocation.startsWith('/administration')) return null;
+
         if (!authState.estInitialise) return null;
 
         final chemin = state.matchedLocation;
@@ -62,6 +68,14 @@ class AppRouter {
         GoRoute(
           path: '/paiements',
           builder: (context, state) => const PaiementsScreen(),
+        ),
+        // Point d'entrée unique de l'espace administration - le reste de
+        // la navigation (accueil admin, activation, annonce) se fait en
+        // Navigator.push classique depuis AdministrationConnexionScreen,
+        // pas via go_router (section volontairement isolée du reste).
+        GoRoute(
+          path: '/administration',
+          builder: (context, state) => const AdministrationConnexionScreen(),
         ),
 
         StatefulShellRoute.indexedStack(

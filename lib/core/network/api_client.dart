@@ -4,6 +4,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Adresse de base réelle de l'API Mobile, communiquée par l'encadrant.
 const String kApiBaseUrl = 'https://api.ipea-gabon.ga/api/mobile';
 
+/// Adresse de base de l'authentification "back-office" (staff/admin),
+/// distincte de l'API mobile étudiante — utilisée uniquement par
+/// l'espace administration (voir lib/features/administration/).
+const String kApiAuthBaseUrl = 'https://api.ipea-gabon.ga/api/auth';
+
 /// Interrupteurs indépendants par domaine fonctionnel.
 ///
 /// Contrairement à un seul interrupteur global, chaque domaine peut être
