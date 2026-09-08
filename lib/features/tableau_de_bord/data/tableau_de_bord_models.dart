@@ -1,32 +1,38 @@
-/// Représente les données affichées sur le tableau de bord.
-/// Cette classe ne change jamais, que les données viennent de fausses
-/// valeurs (aujourd'hui) ou de l'API réelle (plus tard).
+/// Une annonce affichée sur le tableau de bord.
+///
+/// ⚠️ SIMULATION PERMANENTE : contrairement aux autres données de cette
+/// classe, il n'existe AUCUN endpoint "annonces" dans la vraie API
+/// (vérifié dans document.json - aucune route ne correspond). Cette
+/// fonctionnalité ne pourra pas être branchée sans qu'un endpoint dédié
+/// soit d'abord créé côté backend — voir QUESTIONS_API.md, point 6.
+class Annonce {
+  const Annonce({required this.titre, required this.date});
+  final String titre;
+  final String date;
+}
+
+/// Données affichées sur le tableau de bord, assemblées à partir des
+/// repositories réels de chaque fonctionnalité (profil, scolarité,
+/// paiements) plutôt que dupliquées ici — une seule source de vérité
+/// par donnée.
 class TableauDeBordData {
-  final String nomEtudiant;
+  final String prenomEtudiant;
+  final bool boursier;
   final double moyenneGenerale;
   final int resteAPayer;
+  final String? scolariteId;
   final String scolariteNom;
-  final String scolariteAnnee;
-  final String scolariteStatut;
+  final String scolariteCode;
+  final List<Annonce> annonces;
 
   const TableauDeBordData({
-    required this.nomEtudiant,
+    required this.prenomEtudiant,
+    required this.boursier,
     required this.moyenneGenerale,
     required this.resteAPayer,
+    required this.scolariteId,
     required this.scolariteNom,
-    required this.scolariteAnnee,
-    required this.scolariteStatut,
+    required this.scolariteCode,
+    required this.annonces,
   });
-
-  /// Construit l'objet à partir d'un JSON — utilisé quand l'API sera branchée.
-  factory TableauDeBordData.fromJson(Map<String, dynamic> json) {
-    return TableauDeBordData(
-      nomEtudiant: json['nom_etudiant'] as String,
-      moyenneGenerale: (json['moyenne_generale'] as num).toDouble(),
-      resteAPayer: json['reste_a_payer'] as int,
-      scolariteNom: json['scolarite_nom'] as String,
-      scolariteAnnee: json['scolarite_annee'] as String,
-      scolariteStatut: json['scolarite_statut'] as String,
-    );
-  }
 }

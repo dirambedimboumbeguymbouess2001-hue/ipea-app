@@ -6,6 +6,10 @@ class ProfilRepository {
   Future<ProfilEtudiant> obtenirProfil() async {
     if (!ApiFlags.profil) {
       // --- SIMULATION TEMPORAIRE ---
+      // boursier: valeur réellement observée en testant /mobile/active
+      // avec un vrai matricule (voir QUESTIONS_API.md, point 1).
+      // email: purement fictif - n'existe pas encore côté backend,
+      // affiché uniquement pour illustrer le futur comportement.
       await Future.delayed(const Duration(milliseconds: 800));
       return const ProfilEtudiant(
         id: '1',
@@ -13,7 +17,9 @@ class ProfilRepository {
         nom: 'Mbouess',
         prenom: 'Guy',
         telephone: '074 12 34 56',
+        boursier: false,
         photo: null,
+        email: 'guy.mbouess@ipea-gabon.ga',
       );
     }
     final reponse = await ApiClient.instance.dio.get('/profile');

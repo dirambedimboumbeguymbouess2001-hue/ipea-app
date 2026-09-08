@@ -15,11 +15,11 @@ import '../connexion/data/auth_repository.dart';
 import 'data/profil_models.dart';
 import 'data/profil_repository.dart';
 
-/// Onglet "Profil" : reprend le design original (avatar à initiales,
-/// mode édition via l'icône crayon, changement de mot de passe dans une
-/// feuille modale, déconnexion avec confirmation), adapté à la vraie API :
-/// pas de champ email, et le changement de mot de passe ne demande plus
-/// l'ancien mot de passe (mais exige l'identifiant de l'étudiant).
+/// Onglet "Profil" : avatar à initiales avec badge "boursier" (donnée
+/// réelle), mode édition via l'icône crayon, ligne email en lecture
+/// seule (donnée SIMULÉE, en attente du backend - voir
+/// QUESTIONS_API.md), changement de mot de passe en feuille modale,
+/// déconnexion avec confirmation.
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
 
@@ -173,21 +173,50 @@ class _ProfilScreenState extends State<ProfilScreen> {
         Center(
           child: Column(
             children: [
-              // Avatar à initiales : l'étudiant ne peut ni ajouter ni
-              // modifier de photo — seule l'administration en a la
-              // possibilité (règle métier confirmée). Pas d'icône
-              // d'édition superposée sur cet avatar.
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: AppColors.marine,
-                child: Text(
-                  profil.nomComplet.trim().split(' ').where((m) => m.isNotEmpty).map((m) => m[0]).take(2).join(),
-                  style: AppTypography.h1.copyWith(color: AppColors.blanc),
-                ),
+              // Avatar à initiales + badge boursier (donnée réelle de
+              // l'API). L'étudiant ne peut ni ajouter ni modifier de
+              // photo - seule l'administration en a la possibilité.
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: AppColors.marine,
+                    child: Text(
+                      profil.nomComplet.trim().split(' ').where((m) => m.isNotEmpty).map((m) => m[0]).take(2).join(),
+                      style: AppTypography.h1.copyWith(color: AppColors.blanc),
+                    ),
+                  ),
+                  if (profil.boursier)
+                    Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: Tooltip(
+                        message: 'Étudiant boursier',
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.or,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.blanc, width: 2),
+                          ),
+                          child: const Icon(
+                            Symbols.workspace_premium_rounded,
+                            size: 16,
+                            color: AppColors.marine,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(profil.nomComplet, style: AppTypography.h2, textAlign: TextAlign.center),
               Text(profil.matricule, style: AppTypography.bodySmall),
+              if (profil.boursier) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text('Étudiant boursier', style: AppTypography.bodySmall.copyWith(color: AppColors.orFonce)),
+              ],
             ],
           ),
         ),
@@ -224,7 +253,25 @@ class _ProfilScreenState extends State<ProfilScreen> {
                     ),
                   ],
                 )
-              : _ligneInfo(Symbols.call_rounded, 'Téléphone', profil.telephone),
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ligneInfo(Symbols.call_rounded, 'Téléphone', profil.telephone),
+                    if (profil.email != null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(child: _ligneInfo(Symbols.mail_rounded, 'Email', profil.email!)),
+                          Tooltip(
+                            message: 'Fonctionnalité en cours d\'intégration côté serveur - '
+                                'valeur affichée à titre indicatif',
+                            child: Icon(Symbols.lock_rounded, size: 16, color: AppColors.grisMoyen),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -284,9 +331,6 @@ class _FormulaireChangementMotDePasse extends StatefulWidget {
 }
 
 class _FormulaireChangementMotDePasseState extends State<_FormulaireChangementMotDePasse> {
-  // Pas de champ "mot de passe actuel" : la vraie API (PUT /password)
-  // n'en demande pas — seuls le nouveau mot de passe, sa confirmation,
-  // et l'identifiant de l'étudiant sont exigés.
   final _nouveauController = TextEditingController();
   final _confirmationController = TextEditingController();
   bool _chargement = false;

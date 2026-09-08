@@ -20,12 +20,22 @@ class TableauDeBordRepository {
     }
 
     return TableauDeBordData(
-      nomEtudiant: profil.nomComplet,
+      prenomEtudiant: profil.prenom,
+      boursier: profil.boursier,
       moyenneGenerale: moyenne,
       resteAPayer: situation.resteAPayer,
-      scolariteNom: inscription?.libelle ?? '—',
-      scolariteAnnee: '',
-      scolariteStatut: 'En cours',
+      scolariteId: inscription?.id,
+      scolariteNom: inscription?.libelle ?? 'Aucune inscription',
+      scolariteCode: inscription?.code ?? '',
+      annonces: _annoncesSimulees(),
     );
+  }
+
+  /// --- SIMULATION PERMANENTE, voir tableau_de_bord_models.dart ---
+  List<Annonce> _annoncesSimulees() {
+    return const [
+      Annonce(titre: 'Reprise des cours le 15 septembre', date: '01/09/2026'),
+      Annonce(titre: "Clôture des inscriptions administratives", date: '10/09/2026'),
+    ];
   }
 }

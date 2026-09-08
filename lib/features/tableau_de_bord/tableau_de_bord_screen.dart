@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/status_badge.dart';
 import '../../shared/widgets/loading_skeleton.dart';
 import '../../shared/widgets/error_state.dart';
 import 'data/tableau_de_bord_models.dart';
@@ -19,8 +20,6 @@ class TableauDeBordScreen extends StatefulWidget {
 class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
   final _repository = TableauDeBordRepository();
 
-  // Les 3 états possibles de l'écran : chargement (null + pasErreur),
-  // erreur (pasErreur == false), ou succès (donnees != null)
   TableauDeBordData? _donnees;
   bool _enErreur = false;
   bool _enChargement = true;
@@ -66,35 +65,47 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
   }
 
   Widget _construireContenu() {
-    // État ERREUR
-    if (_enErreur) {
-      return ErrorState(onRetry: _charger);
-    }
+    if (_enErreur) return ErrorState(onRetry: _charger);
 
-    // État CHARGEMENT — squelettes à la forme du contenu final,
-    // jamais de spinner plein écran (règle de la charte graphique)
     if (_enChargement) {
       return ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
+          const LoadingSkeleton(height: 40, borderRadius: BorderRadius.all(Radius.circular(8))),
+          const SizedBox(height: AppSpacing.md),
           const LoadingSkeleton(height: 80, borderRadius: BorderRadius.all(Radius.circular(12))),
           const SizedBox(height: AppSpacing.md),
           const LoadingSkeleton(height: 100, borderRadius: BorderRadius.all(Radius.circular(12))),
           const SizedBox(height: AppSpacing.md),
-          const LoadingSkeleton(height: 60, borderRadius: BorderRadius.all(Radius.circular(12))),
+          const LoadingSkeleton(height: 120, borderRadius: BorderRadius.all(Radius.circular(12))),
         ],
       );
     }
 
-    // État SUCCÈS
     final donnees = _donnees!;
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
-        Text('Bonjour, ${donnees.nomEtudiant}', style: AppTypography.h2),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Bonjour, ${donnees.prenomEtudiant}', style: AppTypography.h2),
+            ),
+            if (donnees.boursier)
+              Tooltip(
+                message: 'Étudiant boursier',
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: AppColors.or, shape: BoxShape.circle),
+                  child: const Icon(Symbols.workspace_premium_rounded, size: 18, color: AppColors.marine),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.md),
 
-        // Cartes statistiques
+        // Cartes statistiques — moyenne (simulée, voir QUESTIONS_API.md
+        // point 3) et reste à payer (simulé, voir point 4)
         Row(
           children: [
             Expanded(
@@ -105,7 +116,7 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
                   children: [
                     Text('Moyenne', style: AppTypography.bodySmall.copyWith(color: AppColors.succes)),
                     const SizedBox(height: 4),
-                    Text('${donnees.moyenneGenerale}', style: AppTypography.h2.copyWith(color: AppColors.succes)),
+                    Text(donnees.moyenneGenerale.toStringAsFixed(2), style: AppTypography.h2.copyWith(color: AppColors.succes)),
                   ],
                 ),
               ),
@@ -130,7 +141,9 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
         Text('Ma scolarité', style: AppTypography.h3),
         const SizedBox(height: AppSpacing.sm),
         AppCard(
-          onTap: () {}, // sera relié à /scolarites/:id plus tard
+          onTap: donnees.scolariteId == null
+              ? null
+              : () => context.push('/scolarites/${donnees.scolariteId}'),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -138,13 +151,55 @@ class _TableauDeBordScreenState extends State<TableauDeBordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(donnees.scolariteNom, style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
-                  Text('Année ${donnees.scolariteAnnee}', style: AppTypography.bodySmall),
+                  if (donnees.scolariteCode.isNotEmpty)
+                    Text(donnees.scolariteCode, style: AppTypography.bodySmall),
                 ],
               ),
-              StatusBadge(label: donnees.scolariteStatut, type: StatusType.succes),
+              if (donnees.scolariteId != null)
+                const Icon(Symbols.chevron_right_rounded, color: AppColors.grisMoyen),
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.lg),
+
+        Row(
+          children: [
+            Text('Annonces', style: AppTypography.h3),
+            const SizedBox(width: AppSpacing.xs),
+            // Signal discret que cette section reste simulée (aucun
+            // endpoint réel n'existe - voir QUESTIONS_API.md, point 6)
+            Tooltip(
+              message: "Aucun endpoint annonces n'existe encore côté API — contenu simulé",
+              child: Icon(Symbols.info_rounded, size: 14, color: AppColors.grisMoyen),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (donnees.annonces.isEmpty)
+          Text("Aucune annonce pour le moment.", style: AppTypography.bodySmall)
+        else
+          ...donnees.annonces.map(
+            (annonce) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: AppCard(
+                child: Row(
+                  children: [
+                    const Icon(Symbols.campaign_rounded, color: AppColors.marine, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(annonce.titre, style: AppTypography.bodyLarge),
+                          Text(annonce.date, style: AppTypography.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
